@@ -10,11 +10,6 @@ interface ContactListProps {
   viewMode: ViewMode;
   onViewModeChange: (value: string) => void;
   onRefresh: () => void;
-  googleEnabled: boolean;
-}
-
-function SourceIcon({ source }: { source: "apple" | "google" }) {
-  return source === "apple" ? Icon.TwoPeople : Icon.Globe;
 }
 
 function ViewModeDropdown({ value, onChange }: { value: ViewMode; onChange: (value: string) => void }) {
@@ -26,20 +21,9 @@ function ViewModeDropdown({ value, onChange }: { value: ViewMode; onChange: (val
   );
 }
 
-export default function ContactList({
-  contacts,
-  isLoading,
-  viewMode,
-  onViewModeChange,
-  onRefresh,
-  googleEnabled,
-}: ContactListProps) {
+export default function ContactList({ contacts, isLoading, viewMode, onViewModeChange, onRefresh }: ContactListProps) {
   const isDetail = viewMode === "detail";
   const sections = groupByLetter(contacts);
-
-  const emptyDescription = googleEnabled
-    ? "No contacts found. Try a different search."
-    : "No contacts found. Add a Google Client ID in preferences to also search Google Contacts.";
 
   return (
     <List
@@ -49,7 +33,7 @@ export default function ContactList({
       searchBarPlaceholder="Search contacts..."
       searchBarAccessory={<ViewModeDropdown value={viewMode} onChange={onViewModeChange} />}
     >
-      <List.EmptyView title="No Contacts Found" description={emptyDescription} icon={Icon.TwoPeople} />
+      <List.EmptyView title="No Contacts Found" icon={Icon.TwoPeople} />
       {sections.map(([letter, sectionContacts]) => (
         <List.Section key={letter} title={letter}>
           {sectionContacts.map((contact) => {
@@ -74,7 +58,6 @@ export default function ContactList({
                   isDetail
                     ? undefined
                     : [
-                        { icon: SourceIcon({ source: contact.source }), tooltip: contact.source === "apple" ? "Apple Contacts" : "Google Contacts" },
                         ...(primaryEmail ? [{ text: primaryEmail, icon: Icon.Envelope }] : []),
                         ...(primaryPhone ? [{ text: primaryPhone, icon: Icon.Phone }] : []),
                       ]
@@ -96,16 +79,10 @@ export default function ContactList({
                       ].join("\n\n")}
                       metadata={
                         <List.Item.Detail.Metadata>
-                          <List.Item.Detail.Metadata.Label
-                            title="Source"
-                            text={contact.source === "apple" ? "Apple Contacts" : "Google Contacts"}
-                            icon={SourceIcon({ source: contact.source })}
-                          />
-                          <List.Item.Detail.Metadata.Separator />
                           {phones.map((p) => (
                             <List.Item.Detail.Metadata.Link
                               key={p.value}
-                              title={p.type ? capitalizeType(p.type) : "Phone"}
+                              title={formatType(p.type)}
                               text={p.value}
                               target={`tel:${p.value}`}
                             />
@@ -113,7 +90,7 @@ export default function ContactList({
                           {emails.map((e) => (
                             <List.Item.Detail.Metadata.Link
                               key={e.value}
-                              title={e.type ? capitalizeType(e.type) : "Email"}
+                              title={formatType(e.type)}
                               text={e.value}
                               target={`mailto:${e.value}`}
                             />
@@ -121,15 +98,16 @@ export default function ContactList({
                           {addresses.map((a, i) => (
                             <List.Item.Detail.Metadata.Label
                               key={i}
-                              title={a.type ? capitalizeType(a.type) : "Address"}
+                              title={formatType(a.type)}
                               text={a.formattedValue}
                             />
                           ))}
                           {birthday && <List.Item.Detail.Metadata.Label title="Birthday" text={birthday} />}
-                          {(phones.length > 0 || emails.length > 0 || addresses.length > 0 || birthday) &&
-                            contact.notes && <List.Item.Detail.Metadata.Separator />}
                           {contact.notes && (
-                            <List.Item.Detail.Metadata.Label title="Notes" text={contact.notes} />
+                            <>
+                              <List.Item.Detail.Metadata.Separator />
+                              <List.Item.Detail.Metadata.Label title="Notes" text={contact.notes} />
+                            </>
                           )}
                         </List.Item.Detail.Metadata>
                       }
@@ -146,8 +124,9 @@ export default function ContactList({
   );
 }
 
-function capitalizeType(type: string): string {
-  // Strip AppleScript label prefixes like "_$!<Home>!$_"
+function formatType(type: string | undefined): string {
+  if (!type) return "Other";
+  // Strip AppleScript label wrappers like "_$!<Home>!$_"
   const clean = type.replace(/^_\$!<(.+)>!\$_$/, "$1");
   return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 }

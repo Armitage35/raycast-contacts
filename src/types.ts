@@ -1,4 +1,3 @@
-export type ContactSource = "apple" | "google";
 export type ViewMode = "list" | "detail";
 
 export interface ContactField {
@@ -13,7 +12,6 @@ export interface ContactAddress {
 
 export interface UnifiedContact {
   id: string;
-  source: ContactSource;
   displayName: string;
   firstName?: string;
   lastName?: string;
@@ -25,6 +23,4 @@ export interface UnifiedContact {
   birthday?: string;
   notes?: string;
   photoUrl?: string;
-  /** Google People API resource name, used for deep-linking */
-  resourceName?: string;
 }

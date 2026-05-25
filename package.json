@@ -18,14 +18,6 @@
   ],
   "preferences": [
     {
-      "name": "googleClientId",
-      "type": "textfield",
-      "required": false,
-      "title": "Google OAuth Client ID",
-      "description": "Optional. Add a Google OAuth Client ID (iOS type, bundle ID: com.raycast) to also search Google Contacts. Apple Contacts always work without this.",
-      "placeholder": "123456789.apps.googleusercontent.com"
-    },
-    {
       "name": "defaultView",
       "title": "Default View",
       "type": "dropdown",

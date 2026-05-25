@@ -1,0 +1,51 @@
+---
+description: Project overview and conventions for the raycast-contacts extension
+alwaysApply: true
+---
+
+# raycast-contacts
+
+A Raycast extension that searches Apple Contacts (macOS native) with a full detail view.
+
+## What it does
+
+- Single command: **Search Contacts** — searches all Apple Contacts via AppleScript
+- List view and Detail view (toggleable via dropdown; default is Detail)
+- Detail panel shows: phones, emails, addresses, birthday, notes
+- Actions: Open in Contacts app, Compose Email, Call, Copy name/email/phone, Refresh
+
+## Architecture
+
+```
+src/
+  search-contacts.tsx      ← command entry point
+  apple-contacts.ts        ← AppleScript fetcher + parser (returns UnifiedContact[])
+  hooks.ts                 ← useCachedPromise wrapper (useContacts)
+  types.ts                 ← UnifiedContact, ViewMode, ContactField, ContactAddress
+  helpers.ts               ← groupByLetter, formatBirthday
+  components/
+    ContactList.tsx        ← List + Detail UI, ViewModeDropdown
+    ContactActions.tsx     ← ActionPanel (open, email, call, copy, refresh)
+```
+
+## Key implementation details
+
+- AppleScript uses ASCII 29 (FS), 30 (RS), 28 (VS) as delimiters — never change these
+- `run-applescript` package is used (not JXA / child_process)
+- Apple Contact labels come through as `_$!<Home>!$_` — `formatType()` in ContactList strips this
+- `useCachedPromise` from `@raycast/utils` caches contacts between sessions
+
+## Dev workflow
+
+```bash
+npm run dev     # live-reload in Raycast
+npm run build   # production build to dist/
+npm run lint    # ESLint via @raycast/eslint-config
+```
+
+## Possible next steps
+
+- Add a "Quick Search" no-view command that copies the primary phone/email directly
+- Show contact photos (Apple Contacts photo path via AppleScript)
+- Add keyboard shortcut to open the contact in the macOS Contacts app directly on the right person (deep link via `addressbook://` + contact ID)
+- Performance: only re-fetch if Contacts DB mtime has changed

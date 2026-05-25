@@ -8,8 +8,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 
 type ExtensionPreferences = {
-  /** Google OAuth Client ID - Optional. Add a Google OAuth Client ID (iOS type, bundle ID: com.raycast) to also search Google Contacts. Apple Contacts always work without this. */
-  "googleClientId"?: string,
   /** Default View - Default view mode for the contact list. */
   "defaultView": "list" | "detail"
 }

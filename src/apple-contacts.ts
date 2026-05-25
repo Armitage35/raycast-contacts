@@ -164,7 +164,6 @@ export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
 
     contacts.push({
       id: `apple:${id}`,
-      source: "apple",
       displayName: name?.trim() || firstName?.trim() || lastName?.trim() || emails[0]?.value || id,
       firstName: firstName?.trim() || undefined,
       lastName: lastName?.trim() || undefined,

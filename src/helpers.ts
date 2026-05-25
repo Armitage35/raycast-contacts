@@ -1,13 +1,5 @@
 import { UnifiedContact } from "./types";
 
-export function getContactUrl(contact: UnifiedContact): string | undefined {
-  if (contact.source === "google" && contact.resourceName) {
-    const id = contact.resourceName.replace("people/", "");
-    return `https://contacts.google.com/person/${id}`;
-  }
-  return undefined;
-}
-
 export function formatBirthday(birthday: string | undefined): string | undefined {
   if (!birthday) return undefined;
   const parts = birthday.split("-").map(Number);

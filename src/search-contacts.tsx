@@ -1,42 +1,24 @@
-import { useMemo, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { getPreferenceValues } from "@raycast/api";
-import { withAccessToken } from "@raycast/utils";
-import { google } from "./oauth";
-import { useAppleContacts, useGoogleContacts } from "./hooks";
+import { useContacts } from "./hooks";
 import { ViewMode } from "./types";
 import ContactList from "./components/ContactList";
 
-const { googleClientId, defaultView } = getPreferenceValues<Preferences>();
-const googleEnabled = Boolean(googleClientId?.trim());
+const { defaultView } = getPreferenceValues<Preferences>();
 
-function SearchContacts() {
+export default function SearchContacts() {
   const [viewMode, setViewMode] = useState<ViewMode>((defaultView as ViewMode) ?? "detail");
+  const { data: contacts, isLoading, revalidate } = useContacts();
 
-  const { data: appleContacts, isLoading: appleLoading, revalidate: revalidateApple } = useAppleContacts();
-  const { data: googleContacts, isLoading: googleLoading, revalidate: revalidateGoogle } = useGoogleContacts(googleEnabled);
-
-  const contacts = useMemo(() => {
-    const apple = appleContacts ?? [];
-    const goog = googleContacts ?? [];
-    const merged = [...apple, ...goog];
-    return merged.sort((a, b) => a.displayName.localeCompare(b.displayName));
-  }, [appleContacts, googleContacts]);
-
-  const handleRefresh = useCallback(() => {
-    revalidateApple();
-    if (googleEnabled) revalidateGoogle();
-  }, [revalidateApple, revalidateGoogle]);
+  const handleRefresh = useCallback(() => revalidate(), [revalidate]);
 
   return (
     <ContactList
-      contacts={contacts}
-      isLoading={appleLoading || (googleEnabled && googleLoading)}
+      contacts={contacts ?? []}
+      isLoading={isLoading}
       viewMode={viewMode}
       onViewModeChange={(v) => setViewMode(v as ViewMode)}
       onRefresh={handleRefresh}
-      googleEnabled={googleEnabled}
     />
   );
 }
-
-export default googleEnabled ? withAccessToken(google())(SearchContacts) : SearchContacts;

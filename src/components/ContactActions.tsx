@@ -1,6 +1,5 @@
 import { Action, ActionPanel, Icon } from "@raycast/api";
 import { UnifiedContact } from "../types";
-import { getContactUrl } from "../helpers";
 
 interface ContactActionsProps {
   contact: UnifiedContact;
@@ -10,11 +9,16 @@ interface ContactActionsProps {
 export default function ContactActions({ contact, onRefresh }: ContactActionsProps) {
   const primaryEmail = contact.emails[0]?.value;
   const primaryPhone = contact.phones[0]?.value;
-  const googleUrl = getContactUrl(contact);
 
   return (
     <ActionPanel>
       <ActionPanel.Section title={contact.displayName}>
+        <Action.Open
+          title="Open in Contacts"
+          icon={Icon.TwoPeople}
+          target="addressbook://"
+          shortcut={{ modifiers: ["cmd"], key: "o" }}
+        />
         {primaryEmail && (
           <Action.Open
             title="Compose Email"
@@ -29,21 +33,6 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
             icon={Icon.Phone}
             target={`tel:${primaryPhone}`}
             shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
-          />
-        )}
-        {contact.source === "apple" && (
-          <Action.Open
-            title="Open in Contacts"
-            icon={Icon.TwoPeople}
-            target="addressbook://"
-            shortcut={{ modifiers: ["cmd"], key: "o" }}
-          />
-        )}
-        {googleUrl && (
-          <Action.OpenInBrowser
-            title="Open in Google Contacts"
-            url={googleUrl}
-            shortcut={{ modifiers: ["cmd"], key: "o" }}
           />
         )}
       </ActionPanel.Section>
