@@ -1,5 +1,3 @@
-export type ViewMode = "list" | "detail";
-
 export interface ContactField {
   value: string;
   type?: string;

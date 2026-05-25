@@ -1,5 +1,6 @@
 import { Action, ActionPanel, Icon } from "@raycast/api";
 import { UnifiedContact } from "../types";
+import ContactDetail from "./ContactDetail";
 
 interface ContactActionsProps {
   contact: UnifiedContact;
@@ -12,10 +13,19 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
 
   return (
     <ActionPanel>
-      {/* Primary action (⏎): email if available, otherwise open in Contacts */}
       <ActionPanel.Section>
+        <Action.Push
+          title="See Details"
+          icon={Icon.Sidebar}
+          target={<ContactDetail contact={contact} onRefresh={onRefresh} />}
+        />
         {primaryEmail && (
-          <Action.Open title="Compose Email" icon={Icon.Envelope} target={`mailto:${primaryEmail}`} />
+          <Action.Open
+            title="Compose Email"
+            icon={Icon.Envelope}
+            target={`mailto:${primaryEmail}`}
+            shortcut={{ modifiers: ["cmd", "shift"], key: "e" }}
+          />
         )}
         {primaryPhone && (
           <Action.Open
@@ -47,7 +57,6 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
             key={e.value}
             title={`Copy ${formatType(e.type)} Email`}
             content={e.value}
-            shortcut={i === 0 ? { modifiers: ["cmd", "shift"], key: "e" } : undefined}
           />
         ))}
         <Action.CopyToClipboard
