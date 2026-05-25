@@ -12,20 +12,10 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
 
   return (
     <ActionPanel>
-      <ActionPanel.Section title={contact.displayName}>
-        <Action.Open
-          title="Open in Contacts"
-          icon={Icon.TwoPeople}
-          target="addressbook://"
-          shortcut={{ modifiers: ["cmd"], key: "o" }}
-        />
+      {/* Primary action (⏎): email if available, otherwise open in Contacts */}
+      <ActionPanel.Section>
         {primaryEmail && (
-          <Action.Open
-            title="Compose Email"
-            icon={Icon.Envelope}
-            target={`mailto:${primaryEmail}`}
-            shortcut={{ modifiers: ["cmd", "shift"], key: "e" }}
-          />
+          <Action.Open title="Compose Email" icon={Icon.Envelope} target={`mailto:${primaryEmail}`} />
         )}
         {primaryPhone && (
           <Action.Open
@@ -35,28 +25,36 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
             shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
           />
         )}
+        <Action.Open
+          title="Open in Contacts"
+          icon={Icon.TwoPeople}
+          target="addressbook://"
+          shortcut={{ modifiers: ["cmd"], key: "o" }}
+        />
       </ActionPanel.Section>
 
       <ActionPanel.Section title="Copy">
+        {contact.phones.map((p, i) => (
+          <Action.CopyToClipboard
+            key={p.value}
+            title={`Copy ${formatType(p.type)} Phone`}
+            content={p.value}
+            shortcut={i === 0 ? { modifiers: ["cmd", "shift"], key: "p" } : undefined}
+          />
+        ))}
+        {contact.emails.map((e, i) => (
+          <Action.CopyToClipboard
+            key={e.value}
+            title={`Copy ${formatType(e.type)} Email`}
+            content={e.value}
+            shortcut={i === 0 ? { modifiers: ["cmd", "shift"], key: "e" } : undefined}
+          />
+        ))}
         <Action.CopyToClipboard
           title="Copy Name"
           content={contact.displayName}
           shortcut={{ modifiers: ["cmd", "shift"], key: "n" }}
         />
-        {contact.emails.map((e) => (
-          <Action.CopyToClipboard
-            key={e.value}
-            title={`Copy Email${e.type ? ` (${e.type})` : ""}`}
-            content={e.value}
-          />
-        ))}
-        {contact.phones.map((p) => (
-          <Action.CopyToClipboard
-            key={p.value}
-            title={`Copy Phone${p.type ? ` (${p.type})` : ""}`}
-            content={p.value}
-          />
-        ))}
       </ActionPanel.Section>
 
       <ActionPanel.Section>
@@ -69,4 +67,10 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
       </ActionPanel.Section>
     </ActionPanel>
   );
+}
+
+function formatType(type: string | undefined): string {
+  if (!type) return "";
+  const clean = type.replace(/^_\$!<(.+)>!\$_$/, "$1");
+  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 }

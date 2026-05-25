@@ -1,4 +1,4 @@
-import { Icon, Image, List } from "@raycast/api";
+import { Action, ActionPanel, Icon, Image, List } from "@raycast/api";
 import { getAvatarIcon } from "@raycast/utils";
 import { UnifiedContact, ViewMode } from "../types";
 import { formatBirthday, groupByLetter } from "../helpers";
@@ -33,12 +33,34 @@ export default function ContactList({ contacts, isLoading, viewMode, onViewModeC
       searchBarPlaceholder="Search contacts..."
       searchBarAccessory={<ViewModeDropdown value={viewMode} onChange={onViewModeChange} />}
     >
-      <List.EmptyView title="No Contacts Found" icon={Icon.TwoPeople} />
+      <List.EmptyView
+        title={isLoading ? "Loading Contacts…" : "No Contacts Found"}
+        description={isLoading ? undefined : "Try a different search, or press ⌘O to open the Contacts app."}
+        icon={Icon.TwoPeople}
+        actions={
+          !isLoading ? (
+            <ActionPanel>
+              <Action.Open
+                title="Open Contacts App"
+                icon={Icon.TwoPeople}
+                target="addressbook://"
+                shortcut={{ modifiers: ["cmd"], key: "o" }}
+              />
+              <Action
+                title="Refresh"
+                icon={Icon.ArrowClockwise}
+                shortcut={{ modifiers: ["cmd"], key: "r" }}
+                onAction={onRefresh}
+              />
+            </ActionPanel>
+          ) : undefined
+        }
+      />
       {sections.map(([letter, sectionContacts]) => (
-        <List.Section key={letter} title={letter}>
+        <List.Section key={letter} title={letter} subtitle={`${sectionContacts.length}`}>
           {sectionContacts.map((contact) => {
-            const primaryEmail = contact.emails[0]?.value;
             const primaryPhone = contact.phones[0]?.value;
+            const primaryEmail = contact.emails[0]?.value;
             const icon = contact.photoUrl
               ? { source: contact.photoUrl, mask: Image.Mask.Circle }
               : getAvatarIcon(contact.displayName);
@@ -58,8 +80,8 @@ export default function ContactList({ contacts, isLoading, viewMode, onViewModeC
                   isDetail
                     ? undefined
                     : [
-                        ...(primaryEmail ? [{ text: primaryEmail, icon: Icon.Envelope }] : []),
                         ...(primaryPhone ? [{ text: primaryPhone, icon: Icon.Phone }] : []),
+                        ...(primaryEmail ? [{ text: primaryEmail, icon: Icon.Envelope }] : []),
                       ]
                 }
                 keywords={[
