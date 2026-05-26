@@ -1,0 +1,84 @@
+---
+description: Raycast extension guidelines — store submission rules and UX conventions
+alwaysApply: true
+---
+
+# Raycast Extension Guidelines
+
+## Store Requirements
+
+- `name` must be lowercase hyphenated (URL-compatible); `title` is the human-readable Store/preferences label
+- `description` (extension-level) must be one clear sentence stating what the extension does; shown in Store listing
+- Every command must have a non-empty `description`
+- `author` must exactly match the Raycast account username
+- `license` must be `"MIT"`
+- `categories` are **Title Case**, case-sensitive; must include at least one valid category:
+  `Applications`, `Communication`, `Data`, `Documentation`, `Design Tools`, `Developer Tools`, `Finance`, `Fun`, `Media`, `News`, `Productivity`, `Security`, `System`, `Web`, `Other`
+- Icon: 512×512 px PNG named `extension-icon.png` (or `extension-icon@dark.png` for dark variant); extensions using the default Raycast icon are **rejected**
+- Remove unused assets from the `assets/` folder before submission
+- `README.md` is required if the extension needs setup (API tokens, non-trivial config); placed in the extension root
+- `package-lock.json` must be committed; use `npm` (not yarn/pnpm) for dependencies
+- Run `npm run build` and verify the dist build works before opening a PR
+- No external analytics — using third-party tracking SDKs causes rejection
+- No Keychain access requests — use Raycast preferences API for credentials instead
+
+## Naming Conventions
+
+- Extension and command **titles** follow Apple Style Guide (Title Case): ✅ `Search Contacts` ❌ `search contacts`, `SEARCH CONTACTS`
+- Command titles: prefer `<Verb> <Noun>` structure; avoid articles (`Search Emoji` not `Search an Emoji`)
+- Extension title: use nouns over verbs; be specific if single-command (`Apple Contacts Search` not just `Contacts`)
+- Lowercase is acceptable for canonically lowercase trademarks: `npm`, `iOS`, `macOS`
+
+## Action Panel Rules
+
+- Action titles use **Title Case**: ✅ `Copy Phone Number`, `Open in Contacts` ❌ `copy phone`, `Set priority`
+- The **first** action is the primary action (triggered by `↵`) — put the most useful action first
+- The **second** action is secondary (triggered by `⌘↵`)
+- Destructive actions **must** use `Action.Style.Destructive` and show a confirmation dialog (`confirmAlert`) before executing
+- Add `…` suffix to actions that open a submenu: ✅ `Set Priority…`; submenu items should not repeat the parent name
+- Provide icons for actions when other actions in the same panel have icons (avoid mixed icon/no-icon lists)
+- Group related actions with `ActionPanel.Section`
+
+## Keyboard Shortcuts
+
+- Do **not** conflict with Raycast system shortcuts: `⌘K` (action panel), `⌘P` (no-view command), `⌘,` (preferences), `⇧,` (configure command), `⇧D` (disable command)
+- Custom shortcuts on primary/secondary actions won't display in the UI — document them in README if non-obvious
+
+## UX Conventions
+
+- Use `keepPreviousData: true` on `useCachedPromise` to avoid flickering when reloading data
+- Never render an empty list before data arrives — show the loading indicator instead to avoid flickering "No results"
+- Always handle errors: use `failureToastOptions` on `useCachedPromise` or call `showToast` with `Toast.Style.Failure`
+- Do **not** set `navigationTitle` on the root command (Raycast sets it automatically to the command name); only set it on nested screens
+- Use `List.EmptyView` / `Grid.EmptyView` to customise the empty state
+- Use the Raycast Navigation API (`pushToHistory`, `push`) — don't implement a custom navigation stack
+- Add `placeholder` to all search bars and text fields
+
+## Code Rules
+
+- **No `console.log`** in production code — use Raycast's `showToast` or `showHUD` for user-facing feedback
+- Use `@raycast/api` imports only; do not bundle heavy binary dependencies
+- Request only the macOS permissions the extension actually needs
+- Use the Raycast preferences API for all user-configurable settings and credentials; do not build separate config commands
+
+## package.json Requirements
+
+```jsonc
+{
+  "name": "lowercase-hyphenated",        // URL-compatible, unique
+  "title": "Human Readable Title",       // Title Case, Store-facing
+  "description": "One sentence.",        // Required, shown in Store
+  "icon": "extension-icon.png",          // 512×512 PNG in assets/
+  "author": "raycast-username",          // Must match Raycast account
+  "license": "MIT",
+  "categories": ["Productivity"],        // Title Case, at least one
+  "commands": [
+    {
+      "name": "command-slug",
+      "title": "Command Title",          // Title Case
+      "description": "What it does.",    // Required
+      "mode": "view"
+    }
+  ]
+}
+```

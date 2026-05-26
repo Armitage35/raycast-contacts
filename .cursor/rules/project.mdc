@@ -53,6 +53,10 @@ src/
 | Per-contact detail | ~0.1–0.3 s | `whose { id }` lookup, cached after first load |
 | Subsequent opens | instant | `useCachedPromise` hits disk cache |
 
+## Related rules
+
+- `raycast-guidelines.mdc` — always-apply rule covering Raycast store submission requirements, naming conventions, UX patterns, and ActionPanel rules. Consult it before adding actions, changing `package.json` fields, or shipping any UX change.
+
 ## Dev workflow
 
 ```bash
