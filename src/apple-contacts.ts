@@ -29,38 +29,64 @@ var names      = people.name();
 var firstNames = people.firstName();
 var lastNames  = people.lastName();
 var orgs       = people.organization();
-var phoneVals  = people.phones.value();
-var emailVals  = people.emails.value();
 var out = [];
 for (var i = 0; i < ids.length; i++) {
-  var pvs = phoneVals[i];
-  var evs = emailVals[i];
   out.push({
-    id:           ids[i]        || "",
-    name:         names[i]      || "",
-    firstName:    firstNames[i] || "",
-    lastName:     lastNames[i]  || "",
-    org:          orgs[i]       || "",
-    primaryPhone: (pvs && pvs.length > 0) ? pvs[0] || "" : "",
-    primaryEmail: (evs && evs.length > 0) ? evs[0] || "" : ""
+    id:        ids[i]        || "",
+    name:      names[i]      || "",
+    firstName: firstNames[i] || "",
+    lastName:  lastNames[i]  || "",
+    org:       orgs[i]       || ""
   });
 }
 JSON.stringify(out);
 `;
 
+function normalizeKey(name: string): string {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .trim()
+    .toLowerCase();
+}
+
+function mergeContacts(a: UnifiedContact, b: UnifiedContact): UnifiedContact {
+  return {
+    ...a,
+    firstName: a.firstName || b.firstName,
+    lastName: a.lastName || b.lastName,
+    company: a.company || b.company,
+    jobTitle: a.jobTitle || b.jobTitle,
+    emails: a.emails.length ? a.emails : b.emails,
+    phones: a.phones.length ? a.phones : b.phones,
+  };
+}
+
+function deduplicateContacts(contacts: UnifiedContact[]): UnifiedContact[] {
+  const seen = new Map<string, UnifiedContact>();
+  for (const contact of contacts) {
+    const raw = contact.displayName;
+    if (!raw || !raw.trim()) {
+      // Don't deduplicate contacts with no display name — use id as key
+      seen.set(contact.id, contact);
+      continue;
+    }
+    const key = normalizeKey(raw);
+    if (!seen.has(key)) {
+      seen.set(key, contact);
+    } else {
+      seen.set(key, mergeContacts(seen.get(key)!, contact));
+    }
+  }
+  return Array.from(seen.values());
+}
+
 export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
   const json = await runJXA(LIST_SCRIPT);
-  const raw: {
-    id: string;
-    name: string;
-    firstName: string;
-    lastName: string;
-    org: string;
-    primaryPhone: string;
-    primaryEmail: string;
-  }[] = JSON.parse(json || "[]");
+  const raw: { id: string; name: string; firstName: string; lastName: string; org: string }[] =
+    JSON.parse(json || "[]");
 
-  return raw
+  const contacts = raw
     .filter((r) => r.id)
     .map((r) => ({
       id: `apple:${r.id}`,
@@ -70,10 +96,10 @@ export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
       emails: [],
       phones: [],
       company: r.org || undefined,
-      primaryPhone: r.primaryPhone || undefined,
-      primaryEmail: r.primaryEmail || undefined,
     }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
+
+  return deduplicateContacts(contacts);
 }
 
 // ─── Full detail fetch for a single contact ───────────────────────────────────
