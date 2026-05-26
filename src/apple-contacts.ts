@@ -163,18 +163,6 @@ export async function fetchContactDetail(contact: UnifiedContact): Promise<Unifi
   };
 }
 
-// ─── Bulk photo fetch ─────────────────────────────────────────────────────────
-// Returns a map of contact id (e.g. "apple:<uuid>") → data URL for all contacts
-// that have image data. Uses a single native binary call for efficiency.
-
-export async function fetchAllContactPhotos(): Promise<Record<string, string>> {
-  const json = await runHelper("photos");
-  const raw: { id: string; photoBase64: string }[] = JSON.parse(json || "[]");
-  return Object.fromEntries(
-    raw.filter((r) => r.id && r.photoBase64).map((r) => [`apple:${r.id}`, `data:image/jpeg;base64,${r.photoBase64}`]),
-  );
-}
-
 // ─── Delete a contact ─────────────────────────────────────────────────────────
 
 export async function deleteAppleContact(appleId: string): Promise<void> {

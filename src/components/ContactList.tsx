@@ -3,7 +3,6 @@ import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { fetchContactDetail } from "../apple-contacts";
 import { formatBirthday, formatType, groupByLetter } from "../helpers";
-import { useContactPhotos } from "../hooks";
 import { ContactAddress, UnifiedContact } from "../types";
 import ContactActions from "./ContactActions";
 import ContactForm from "./ContactForm";
@@ -59,14 +58,10 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
 
     [selectedContact!],
     {
-      keepPreviousData: true,
+      keepPreviousData: false,
       execute: selectedContact !== null,
     },
   );
-
-  // Eagerly loaded photo map: id → data URL. Starts loading in the background
-  // right after the component mounts so avatars are ready without selecting.
-  const { data: photoMap } = useContactPhotos();
 
   return (
     <List
@@ -112,7 +107,7 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
             const isSelected = contact.id === selectedId;
             const displayContact = isSelected && detailContact ? detailContact : contact;
 
-            const photoUrl = displayContact.photoUrl ?? contact.photoUrl ?? photoMap?.[contact.id];
+            const photoUrl = displayContact.photoUrl ?? contact.photoUrl;
             const icon = photoUrl ? { source: photoUrl, mask: Image.Mask.Circle } : getAvatarIcon(contact.displayName);
 
             return (
