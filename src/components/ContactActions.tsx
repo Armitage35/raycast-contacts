@@ -6,9 +6,11 @@ import {
   Alert,
   showToast,
   Toast,
+  useNavigation,
 } from "@raycast/api";
 import { deleteAppleContact } from "../apple-contacts";
 import { UnifiedContact } from "../types";
+import ContactForm from "./ContactForm";
 
 interface ContactActionsProps {
   contact: UnifiedContact;
@@ -21,6 +23,7 @@ export default function ContactActions({
   onRefresh,
   onContactDeleted,
 }: ContactActionsProps) {
+  const { push } = useNavigation();
   const primaryEmail = contact.emails[0]?.value;
   const primaryPhone = contact.phones[0]?.value;
 
@@ -81,6 +84,23 @@ export default function ContactActions({
           title="Copy Name"
           content={contact.displayName}
           shortcut={{ modifiers: ["cmd", "shift"], key: "n" }}
+        />
+      </ActionPanel.Section>
+
+      <ActionPanel.Section>
+        <Action
+          title="Edit Contact"
+          icon={Icon.Pencil}
+          shortcut={{ modifiers: ["cmd"], key: "e" }}
+          onAction={() =>
+            push(<ContactForm contact={contact} onSaved={onRefresh} />)
+          }
+        />
+        <Action
+          title="New Contact"
+          icon={Icon.PersonCircle}
+          shortcut={{ modifiers: ["cmd"], key: "n" }}
+          onAction={() => push(<ContactForm onSaved={onRefresh} />)}
         />
       </ActionPanel.Section>
 

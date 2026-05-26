@@ -1,4 +1,11 @@
-import { Action, ActionPanel, Icon, Image, List, useNavigation } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Icon,
+  Image,
+  List,
+  useNavigation,
+} from "@raycast/api";
 import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { fetchContactDetail } from "../apple-contacts";
@@ -62,6 +69,7 @@ export default function ContactList({
   isLoading,
   onRefresh,
 }: ContactListProps) {
+  const { push } = useNavigation();
   const sections = groupByLetter(contacts);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -96,6 +104,12 @@ export default function ContactList({
         actions={
           !isLoading ? (
             <ActionPanel>
+              <Action
+                title="New Contact"
+                icon={Icon.PersonCircle}
+                shortcut={{ modifiers: ["cmd"], key: "n" }}
+                onAction={() => push(<ContactForm onSaved={onRefresh} />)}
+              />
               <Action.Open
                 title="Open Contacts App"
                 icon={Icon.TwoPeople}
