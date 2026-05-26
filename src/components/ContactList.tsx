@@ -122,10 +122,19 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
                 key={contact.id}
                 id={contact.id}
                 title={contact.displayName}
-                subtitle={contact.primaryPhone ?? ""}
+                subtitle={contact.primaryPhone ?? contact.company ?? ""}
                 icon={icon}
-                accessories={contact.company ? [{ tag: contact.company }] : undefined}
-                keywords={[contact.firstName ?? "", contact.lastName ?? "", contact.company ?? ""]}
+                accessories={[
+                  ...(contact.primaryEmail ? [{ text: contact.primaryEmail }] : []),
+                  ...(contact.company ? [{ tag: contact.company }] : []),
+                ]}
+                keywords={[
+                  contact.firstName ?? "",
+                  contact.lastName ?? "",
+                  contact.company ?? "",
+                  contact.primaryPhone ?? "",
+                  contact.primaryEmail ?? "",
+                ]}
                 detail={
                   <List.Item.Detail
                     markdown={buildMarkdown(displayContact)}
