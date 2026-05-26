@@ -25,7 +25,11 @@ export default function ContactDetail({ contact, onRefresh }: ContactDetailProps
   const primaryPhone = c.phones[0]?.value;
   const birthday = formatBirthday(c.birthday);
 
-  const lines: string[] = [`# ${c.displayName}`];
+  const lines: string[] = [];
+  if (c.photoUrl) {
+    lines.push(`![photo](${c.photoUrl})\n`);
+  }
+  lines.push(`# ${c.displayName}`);
   if (c.company || c.jobTitle) {
     lines.push([c.jobTitle, c.company].filter(Boolean).join(" · "));
   }

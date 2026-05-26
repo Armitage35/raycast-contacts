@@ -56,10 +56,20 @@ export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
 function detailScript(appleId: string): string {
   return `
 var app = Application("Contacts");
+app.includeStandardAdditions = true;
 var p = app.people.whose({ id: { _equals: ${JSON.stringify(appleId)} } })[0];
 var rec = {
-  emails: [], phones: [], addresses: [], notes: "", jobTitle: "", birthday: ""
+  emails: [], phones: [], addresses: [], notes: "", jobTitle: "", birthday: "", photoPath: ""
 };
+try {
+  var img = p.image();
+  var tempPath = "/tmp/raycast-contact-" + ${JSON.stringify(appleId)} + ".jpg";
+  var f = app.openForAccess(Path(tempPath), { writePermission: true });
+  app.setEof(f, { to: 0 });
+  app.write(img, { to: f });
+  app.closeAccess(f);
+  rec.photoPath = tempPath;
+} catch(photoErr) {}
 try {
   var ems = p.emails();
   for (var j = 0; j < ems.length; j++) {
@@ -116,6 +126,7 @@ interface RawDetail {
   jobTitle: string;
   notes: string;
   birthday: string;
+  photoPath: string;
 }
 
 function formatLabel(type: string): string | undefined {
@@ -137,5 +148,6 @@ export async function fetchContactDetail(contact: UnifiedContact): Promise<Unifi
     jobTitle: raw.jobTitle || undefined,
     notes: raw.notes || undefined,
     birthday: raw.birthday || undefined,
+    photoUrl: raw.photoPath ? `file://${raw.photoPath}` : undefined,
   };
 }
