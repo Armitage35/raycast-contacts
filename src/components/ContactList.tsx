@@ -1,4 +1,5 @@
 import { Action, ActionPanel, Icon, Image, List } from "@raycast/api";
+// Phone/email are not fetched at list time (perf) — available in detail view
 import { getAvatarIcon } from "@raycast/utils";
 import { UnifiedContact } from "../types";
 import { groupByLetter } from "../helpers";
@@ -31,8 +32,6 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
       {sections.map(([letter, sectionContacts]) => (
         <List.Section key={letter} title={letter} subtitle={`${sectionContacts.length}`}>
           {sectionContacts.map((contact) => {
-            const primaryPhone = contact.phones[0]?.value;
-            const primaryEmail = contact.emails[0]?.value;
             const icon = contact.photoUrl
               ? { source: contact.photoUrl, mask: Image.Mask.Circle }
               : getAvatarIcon(contact.displayName);
@@ -43,15 +42,9 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
                 title={contact.displayName}
                 subtitle={contact.company ?? ""}
                 icon={icon}
-                accessories={[
-                  ...(primaryPhone ? [{ text: primaryPhone, icon: Icon.Phone }] : []),
-                  ...(primaryEmail ? [{ text: primaryEmail, icon: Icon.Envelope }] : []),
-                ]}
                 keywords={[
                   contact.firstName ?? "",
                   contact.lastName ?? "",
-                  primaryEmail ?? "",
-                  primaryPhone ?? "",
                   contact.company ?? "",
                 ]}
                 actions={<ContactActions contact={contact} onRefresh={onRefresh} />}

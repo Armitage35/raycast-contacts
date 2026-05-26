@@ -1,181 +1,141 @@
-import { runAppleScript } from "run-applescript";
+import { execFile } from "child_process";
+import { promisify } from "util";
 import { UnifiedContact } from "./types";
 
-// ASCII control characters used as delimiters — unlikely to appear in contact data
-const FS = "\x1d"; // Field Separator (Group Separator, ASCII 29)
-const RS = "\x1e"; // Record Separator (ASCII 30)
-const VS = "\x1c"; // Value Separator within a field (File Separator, ASCII 28)
+const execFileAsync = promisify(execFile);
 
-const FETCH_SCRIPT = `
-set fs to (ASCII character 29)
-set rs to (ASCII character 30)
-set vs to (ASCII character 28)
-set records to {}
+async function runJXA(script: string): Promise<string> {
+  const { stdout } = await execFileAsync("osascript", ["-l", "JavaScript", "-e", script]);
+  return stdout.trim();
+}
 
-tell application "Contacts"
-  repeat with p in every person
-    try
-      set pId to (id of p) as string
+// ─── Fast list fetch (bulk-only, no per-person bridge calls) ──────────────────
 
-      set pName to ""
-      try
-        set pName to (name of p) as string
-      end try
-
-      set fnStr to ""
-      try
-        if first name of p is not missing value then
-          set fnStr to (first name of p) as string
-        end if
-      end try
-
-      set lnStr to ""
-      try
-        if last name of p is not missing value then
-          set lnStr to (last name of p) as string
-        end if
-      end try
-
-      set emailStr to ""
-      repeat with e in (emails of p)
-        try
-          set et to ""
-          try
-            set et to (label of e) as string
-          end try
-          set emailStr to emailStr & (value of e as string) & vs & et & ","
-        end try
-      end repeat
-
-      set phoneStr to ""
-      repeat with ph in (phones of p)
-        try
-          set pt to ""
-          try
-            set pt to (label of ph) as string
-          end try
-          set phoneStr to phoneStr & (value of ph as string) & vs & pt & ","
-        end try
-      end repeat
-
-      set orgStr to ""
-      try
-        if organization of p is not missing value then
-          set orgStr to (organization of p) as string
-        end if
-      end try
-
-      set jobStr to ""
-      try
-        if job title of p is not missing value then
-          set jobStr to (job title of p) as string
-        end if
-      end try
-
-      set noteStr to ""
-      try
-        if note of p is not missing value then
-          set noteStr to (note of p) as string
-        end if
-      end try
-
-      set bdStr to ""
-      try
-        if birth date of p is not missing value then
-          set bd to birth date of p
-          set bdStr to (year of bd as string) & "-" & ((month of bd as integer) as string) & "-" & (day of bd as string)
-        end if
-      end try
-
-      set addrStr to ""
-      repeat with a in (addresses of p)
-        try
-          set addrLabel to ""
-          try
-            set addrLabel to (label of a) as string
-          end try
-          set fmtAddr to ""
-          try
-            set fmtAddr to (formatted address of a) as string
-          end try
-          if fmtAddr is not "" then
-            set addrStr to addrStr & fmtAddr & vs & addrLabel & ","
-          end if
-        end try
-      end repeat
-
-      set end of records to (pId & fs & pName & fs & fnStr & fs & lnStr & fs & emailStr & fs & phoneStr & fs & orgStr & fs & jobStr & fs & noteStr & fs & bdStr & fs & addrStr)
-    end try
-  end repeat
-end tell
-
-set AppleScript's text item delimiters to (ASCII character 30)
-set output to records as string
-set AppleScript's text item delimiters to ""
-return output
+const LIST_SCRIPT = `
+var app = Application("Contacts");
+var people = app.people;
+var ids        = people.id();
+var names      = people.name();
+var firstNames = people.firstName();
+var lastNames  = people.lastName();
+var orgs       = people.organization();
+var out = [];
+for (var i = 0; i < ids.length; i++) {
+  out.push({
+    id:        ids[i]        || "",
+    name:      names[i]      || "",
+    firstName: firstNames[i] || "",
+    lastName:  lastNames[i]  || "",
+    org:       orgs[i]       || ""
+  });
+}
+JSON.stringify(out);
 `;
 
-function parseFields(raw: string): string[] {
-  return raw.split(VS);
-}
-
-function parseRepeatedField(raw: string): { value: string; type?: string }[] {
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .filter(Boolean)
-    .map((entry) => {
-      const [value, type] = parseFields(entry);
-      return { value: value?.trim() ?? "", type: type?.trim() || undefined };
-    })
-    .filter((e) => e.value);
-}
-
-function parseAddresses(raw: string): { formattedValue: string; type?: string }[] {
-  if (!raw) return [];
-  return raw
-    .split(",")
-    .filter(Boolean)
-    .map((entry) => {
-      const [value, type] = parseFields(entry);
-      const formatted = value?.trim().replace(/\r?\n/g, ", ") ?? "";
-      return { formattedValue: formatted, type: type?.trim() || undefined };
-    })
-    .filter((a) => a.formattedValue);
-}
-
 export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
-  const output = await runAppleScript(FETCH_SCRIPT);
-  if (!output?.trim()) return [];
+  const json = await runJXA(LIST_SCRIPT);
+  const raw: { id: string; name: string; firstName: string; lastName: string; org: string }[] =
+    JSON.parse(json || "[]");
 
-  const contacts: UnifiedContact[] = [];
-  for (const record of output.split(RS)) {
-    const trimmed = record.trim();
-    if (!trimmed) continue;
+  return raw
+    .filter((r) => r.id)
+    .map((r) => ({
+      id: `apple:${r.id}`,
+      displayName: r.name || r.firstName || r.lastName || r.id,
+      firstName: r.firstName || undefined,
+      lastName: r.lastName || undefined,
+      emails: [],
+      phones: [],
+      company: r.org || undefined,
+    }))
+    .sort((a, b) => a.displayName.localeCompare(b.displayName));
+}
 
-    const parts = trimmed.split(FS);
-    const [id, name, firstName, lastName, emailsRaw, phonesRaw, org, jobTitle, notes, birthday, addrsRaw] = parts;
+// ─── Full detail fetch for a single contact ───────────────────────────────────
 
-    if (!id) continue;
-
-    const emails = parseRepeatedField(emailsRaw ?? "");
-    const phones = parseRepeatedField(phonesRaw ?? "");
-    const addresses = parseAddresses(addrsRaw ?? "");
-
-    contacts.push({
-      id: `apple:${id}`,
-      displayName: name?.trim() || firstName?.trim() || lastName?.trim() || emails[0]?.value || id,
-      firstName: firstName?.trim() || undefined,
-      lastName: lastName?.trim() || undefined,
-      emails,
-      phones,
-      company: org?.trim() || undefined,
-      jobTitle: jobTitle?.trim() || undefined,
-      notes: notes?.trim() || undefined,
-      birthday: birthday?.trim() || undefined,
-      addresses: addresses.length > 0 ? addresses : undefined,
-    });
+function detailScript(appleId: string): string {
+  return `
+var app = Application("Contacts");
+var p = app.people.whose({ id: { _equals: ${JSON.stringify(appleId)} } })[0];
+var rec = {
+  emails: [], phones: [], addresses: [], notes: "", jobTitle: "", birthday: ""
+};
+try {
+  var ems = p.emails();
+  for (var j = 0; j < ems.length; j++) {
+    try {
+      var ev = ems[j].value() || "";
+      var el = ""; try { el = ems[j].label() || ""; } catch(e2) {}
+      if (ev) rec.emails.push({ value: ev, type: el });
+    } catch(e) {}
   }
+} catch(e) {}
+try {
+  var phs = p.phones();
+  for (var j = 0; j < phs.length; j++) {
+    try {
+      var pv = phs[j].value() || "";
+      var pl = ""; try { pl = phs[j].label() || ""; } catch(e2) {}
+      if (pv) rec.phones.push({ value: pv, type: pl });
+    } catch(e) {}
+  }
+} catch(e) {}
+try {
+  var adds = p.addresses();
+  for (var j = 0; j < adds.length; j++) {
+    try {
+      var al = ""; try { al = adds[j].label() || ""; } catch(e2) {}
+      var parts = [];
+      try { var s = adds[j].street();   if (s) parts.push(s); } catch(e2) {}
+      try { var c = adds[j].city();     if (c) parts.push(c); } catch(e2) {}
+      try { var st = adds[j].state();   if (st) parts.push(st); } catch(e2) {}
+      try { var z = adds[j].zip();      if (z) parts.push(z); } catch(e2) {}
+      try { var co = adds[j].country(); if (co) parts.push(co); } catch(e2) {}
+      var fa = parts.join(", ");
+      if (fa) rec.addresses.push({ formattedValue: fa, type: al });
+    } catch(e) {}
+  }
+} catch(e) {}
+try { rec.jobTitle = p.jobTitle() || ""; } catch(e) {}
+try { rec.notes = p.note() || ""; } catch(e) {}
+try {
+  var bd = p.birthdate();
+  if (bd) {
+    var d = new Date(bd);
+    rec.birthday = d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+} catch(e) {}
+JSON.stringify(rec);
+`;
+}
 
-  return contacts.sort((a, b) => a.displayName.localeCompare(b.displayName));
+interface RawDetail {
+  emails: { value: string; type: string }[];
+  phones: { value: string; type: string }[];
+  addresses: { formattedValue: string; type: string }[];
+  jobTitle: string;
+  notes: string;
+  birthday: string;
+}
+
+function formatLabel(type: string): string | undefined {
+  if (!type) return undefined;
+  const clean = type.replace(/^_\$!<(.+)>!\$_$/, "$1");
+  return clean || undefined;
+}
+
+export async function fetchContactDetail(contact: UnifiedContact): Promise<UnifiedContact> {
+  const appleId = contact.id.replace("apple:", "");
+  const json = await runJXA(detailScript(appleId));
+  const raw: RawDetail = JSON.parse(json || "{}");
+
+  return {
+    ...contact,
+    emails: (raw.emails ?? []).map((e) => ({ value: e.value, type: formatLabel(e.type) })),
+    phones: (raw.phones ?? []).map((p) => ({ value: p.value, type: formatLabel(p.type) })),
+    addresses: (raw.addresses ?? []).map((a) => ({ formattedValue: a.formattedValue, type: formatLabel(a.type) })),
+    jobTitle: raw.jobTitle || undefined,
+    notes: raw.notes || undefined,
+    birthday: raw.birthday || undefined,
+  };
 }

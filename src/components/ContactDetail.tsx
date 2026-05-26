@@ -1,4 +1,6 @@
 import { Action, ActionPanel, Detail, Icon } from "@raycast/api";
+import { useCachedPromise } from "@raycast/utils";
+import { fetchContactDetail } from "../apple-contacts";
 import { UnifiedContact } from "../types";
 import { formatBirthday } from "../helpers";
 
@@ -7,44 +9,52 @@ interface ContactDetailProps {
   onRefresh: () => void;
 }
 
-export default function ContactDetail({ contact, onRefresh }: ContactDetailProps) {
-  const primaryEmail = contact.emails[0]?.value;
-  const primaryPhone = contact.phones[0]?.value;
-  const birthday = formatBirthday(contact.birthday);
+function formatType(type: string | undefined): string {
+  if (!type) return "";
+  const clean = type.replace(/^_\$!<(.+)>!\$_$/, "$1");
+  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+}
 
-  const lines: string[] = [`# ${contact.displayName}`];
-  if (contact.company || contact.jobTitle) {
-    lines.push([contact.jobTitle, contact.company].filter(Boolean).join(" · "));
+export default function ContactDetail({ contact, onRefresh }: ContactDetailProps) {
+  const { data: full, isLoading } = useCachedPromise(fetchContactDetail, [contact], {
+    keepPreviousData: true,
+  });
+
+  const c = full ?? contact;
+  const primaryEmail = c.emails[0]?.value;
+  const primaryPhone = c.phones[0]?.value;
+  const birthday = formatBirthday(c.birthday);
+
+  const lines: string[] = [`# ${c.displayName}`];
+  if (c.company || c.jobTitle) {
+    lines.push([c.jobTitle, c.company].filter(Boolean).join(" · "));
   }
   lines.push("");
 
-  if (contact.phones.length > 0) {
+  if (c.phones.length > 0) {
     lines.push("### Phone");
-    for (const p of contact.phones) lines.push(`- ${p.value}${p.type ? `  *(${formatType(p.type)})*` : ""}`);
+    for (const p of c.phones) lines.push(`- ${p.value}${p.type ? `  *(${formatType(p.type)})*` : ""}`);
     lines.push("");
   }
-  if (contact.emails.length > 0) {
+  if (c.emails.length > 0) {
     lines.push("### Email");
-    for (const e of contact.emails) lines.push(`- ${e.value}${e.type ? `  *(${formatType(e.type)})*` : ""}`);
+    for (const e of c.emails) lines.push(`- ${e.value}${e.type ? `  *(${formatType(e.type)})*` : ""}`);
     lines.push("");
   }
-  if ((contact.addresses ?? []).length > 0) {
+  if ((c.addresses ?? []).length > 0) {
     lines.push("### Address");
-    for (const a of contact.addresses!) {
+    for (const a of c.addresses!) {
       lines.push(`- ${a.formattedValue.replace(/\n/g, ", ")}${a.type ? `  *(${formatType(a.type)})*` : ""}`);
     }
     lines.push("");
   }
-  if (birthday) {
-    lines.push(`### Birthday\n- ${birthday}\n`);
-  }
-  if (contact.notes) {
-    lines.push(`### Notes\n${contact.notes}`);
-  }
+  if (birthday) lines.push(`### Birthday\n- ${birthday}\n`);
+  if (c.notes) lines.push(`### Notes\n${c.notes}`);
 
   return (
     <Detail
-      navigationTitle={contact.displayName}
+      isLoading={isLoading}
+      navigationTitle={c.displayName}
       markdown={lines.join("\n")}
       actions={
         <ActionPanel>
@@ -68,7 +78,7 @@ export default function ContactDetail({ contact, onRefresh }: ContactDetailProps
             />
           </ActionPanel.Section>
           <ActionPanel.Section title="Copy">
-            {contact.phones.map((p, i) => (
+            {c.phones.map((p, i) => (
               <Action.CopyToClipboard
                 key={p.value}
                 title={`Copy ${formatType(p.type)} Phone`}
@@ -76,7 +86,7 @@ export default function ContactDetail({ contact, onRefresh }: ContactDetailProps
                 shortcut={i === 0 ? { modifiers: ["cmd", "shift"], key: "p" } : undefined}
               />
             ))}
-            {contact.emails.map((e, i) => (
+            {c.emails.map((e, i) => (
               <Action.CopyToClipboard
                 key={e.value}
                 title={`Copy ${formatType(e.type)} Email`}
@@ -86,13 +96,13 @@ export default function ContactDetail({ contact, onRefresh }: ContactDetailProps
             ))}
             <Action.CopyToClipboard
               title="Copy Name"
-              content={contact.displayName}
+              content={c.displayName}
               shortcut={{ modifiers: ["cmd", "shift"], key: "n" }}
             />
           </ActionPanel.Section>
           <ActionPanel.Section>
             <Action
-              title="Refresh Contacts"
+              title="Refresh"
               icon={Icon.ArrowClockwise}
               shortcut={{ modifiers: ["cmd"], key: "r" }}
               onAction={onRefresh}
@@ -102,10 +112,4 @@ export default function ContactDetail({ contact, onRefresh }: ContactDetailProps
       }
     />
   );
-}
-
-function formatType(type: string | undefined): string {
-  if (!type) return "";
-  const clean = type.replace(/^_\$!<(.+)>!\$_$/, "$1");
-  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 }
