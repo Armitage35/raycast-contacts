@@ -31,4 +31,5 @@ No API keys or configuration required. On first run, macOS will prompt you to gr
 | `⌘⇧P` | Copy primary phone number |
 | `⌘⇧N` | Copy name |
 | `⌘O` | Open contact in Contacts.app |
+| `⌘M` | Open address in Maps (when address is present) |
 | `⌘R` | Refresh contacts list |

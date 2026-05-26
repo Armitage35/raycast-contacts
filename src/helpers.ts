@@ -21,18 +21,16 @@ export function formatBirthday(
   }
 
   try {
-    const locale = Intl.DateTimeFormat().resolvedOptions().locale;
-
     if (year && year > 1) {
       const date = new Date(year, month - 1, day);
-      return new Intl.DateTimeFormat(locale, {
+      return new Intl.DateTimeFormat("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
       }).format(date);
     } else {
       const date = new Date(2000, month - 1, day);
-      return new Intl.DateTimeFormat(locale, {
+      return new Intl.DateTimeFormat("en-US", {
         month: "long",
         day: "numeric",
       }).format(date);
@@ -42,31 +40,10 @@ export function formatBirthday(
   }
 }
 
-export function isUpcomingBirthday(
-  birthday: string | undefined,
-  withinDays = 30,
-): boolean {
-  if (!birthday) return false;
-  const parts = birthday.split("-").map(Number);
-  if (parts.some(isNaN)) return false;
-
-  let month: number;
-  let day: number;
-
-  if (parts.length === 3) {
-    [, month, day] = parts;
-  } else if (parts.length === 2) {
-    [month, day] = parts;
-  } else {
-    return false;
-  }
-
-  const today = new Date();
-  const thisYear = today.getFullYear();
-  const bday = new Date(thisYear, month - 1, day);
-  if (bday < today) bday.setFullYear(thisYear + 1);
-  const diff = (bday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
-  return diff >= 0 && diff <= withinDays;
+export function formatType(type: string | undefined): string {
+  if (!type) return "";
+  const clean = type.replace(/^_\$!<(.+)>!\$_$/, "$1");
+  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 }
 
 export function groupByLetter(

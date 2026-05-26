@@ -9,18 +9,11 @@ import {
 import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { fetchContactDetail } from "../apple-contacts";
-import { formatBirthday, groupByLetter } from "../helpers";
+import { formatBirthday, formatType, groupByLetter } from "../helpers";
 import { useContactPhotos } from "../hooks";
-import { t } from "../i18n";
 import { ContactAddress, UnifiedContact } from "../types";
 import ContactActions from "./ContactActions";
 import ContactForm from "./ContactForm";
-
-function formatType(type: string | undefined): string {
-  if (!type) return "";
-  const clean = type.replace(/^_\$!<(.+)>!\$_$/, "$1");
-  return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
-}
 
 function formatAddress(a: ContactAddress): string {
   return a.formattedValue.replace(/\n/g, ", ");
@@ -97,31 +90,35 @@ export default function ContactList({
       isLoading={isLoading}
       isShowingDetail
       filtering={false}
-      searchBarPlaceholder={t("search_contacts_placeholder")}
+      searchBarPlaceholder="Search contacts…"
       onSearchTextChange={setSearchText}
       onSelectionChange={(id) => setSelectedId(id ?? null)}
     >
       <List.EmptyView
-        title={isLoading ? t("loading_contacts") : t("no_contacts_found")}
-        description={isLoading ? undefined : t("no_contacts_description")}
+        title={isLoading ? "Loading Contacts…" : "No Contacts Found"}
+        description={
+          isLoading
+            ? undefined
+            : "Try a different search, or press ⌘O to open the Contacts app."
+        }
         icon={Icon.TwoPeople}
         actions={
           !isLoading ? (
             <ActionPanel>
               <Action
-                title={t("action_new_contact")}
+                title="New Contact"
                 icon={Icon.PersonCircle}
                 shortcut={{ modifiers: ["cmd"], key: "n" }}
                 onAction={() => push(<ContactForm onSaved={onRefresh} />)}
               />
               <Action.Open
-                title={t("action_open_contacts_app")}
+                title="Open Contacts App"
                 icon={Icon.TwoPeople}
                 target="addressbook://"
                 shortcut={{ modifiers: ["cmd"], key: "o" }}
               />
               <Action
-                title={t("action_refresh")}
+                title="Refresh"
                 icon={Icon.ArrowClockwise}
                 shortcut={{ modifiers: ["cmd"], key: "r" }}
                 onAction={onRefresh}
@@ -172,7 +169,7 @@ export default function ContactList({
                     displayContact.jobTitle || displayContact.company
                       ? [displayContact.jobTitle, displayContact.company]
                           .filter(Boolean)
-                          .join(t("subtitle_at"))
+                          .join(" at ")
                       : null;
 
                   return (
@@ -184,7 +181,7 @@ export default function ContactList({
                           {phones.map((p, i) => (
                             <List.Item.Detail.Metadata.Link
                               key={i}
-                              title={i === 0 ? t("label_phone") : ""}
+                              title={i === 0 ? "Phone" : ""}
                               text={`${p.value}${p.type ? `  (${formatType(p.type)})` : ""}`}
                               target={`tel:${phoneToE164(p.value)}`}
                             />
@@ -197,7 +194,7 @@ export default function ContactList({
                           {emails.map((e, i) => (
                             <List.Item.Detail.Metadata.Link
                               key={i}
-                              title={i === 0 ? t("label_email") : ""}
+                              title={i === 0 ? "Email" : ""}
                               text={`${e.value}${e.type ? `  (${formatType(e.type)})` : ""}`}
                               target={`mailto:${e.value}`}
                             />
@@ -210,7 +207,7 @@ export default function ContactList({
                           {addresses.map((a, i) => (
                             <List.Item.Detail.Metadata.Link
                               key={i}
-                              title={i === 0 ? t("label_address") : ""}
+                              title={i === 0 ? "Address" : ""}
                               text={`${formatAddress(a)}${a.type ? `  (${formatType(a.type)})` : ""}`}
                               target={addressToMapsUrl(formatAddress(a))}
                             />
@@ -219,7 +216,7 @@ export default function ContactList({
                           {birthday && <List.Item.Detail.Metadata.Separator />}
                           {birthday && (
                             <List.Item.Detail.Metadata.Label
-                              title={t("label_birthday")}
+                              title="Birthday"
                               text={birthday}
                               icon={Icon.Calendar}
                             />
@@ -232,6 +229,7 @@ export default function ContactList({
                 actions={
                   <ContactActions
                     contact={displayContact}
+                    isLoadingDetail={isSelected && isLoadingDetail}
                     onRefresh={onRefresh}
                     onContactDeleted={onRefresh}
                   />
