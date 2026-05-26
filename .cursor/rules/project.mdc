@@ -5,52 +5,69 @@ alwaysApply: true
 
 # raycast-contacts
 
-A Raycast extension that searches Apple Contacts (macOS native) with a full detail view.
+A Raycast extension that searches, creates, edits, and deletes Apple Contacts (macOS native).
 
 ## What it does
 
-- Single command: **Search Contacts** — searches all Apple Contacts via AppleScript
-- List view and Detail view (toggleable via dropdown; default is Detail)
-- Detail panel shows: phones, emails, addresses, birthday, notes
-- Actions: Open in Contacts app, Compose Email, Call, Copy name/email/phone, Refresh
+- **Search Contacts** — single command; searches all Apple Contacts via JXA (osascript)
+- **Split-pane layout** — alphabetically-sectioned list on the left; rich markdown detail on the right (always visible, no toggle)
+- **Detail panel** — photo, phones, emails, addresses, birthday, job title, notes; loaded on-demand per selection
+- **Create contact** — `⌘N` opens `ContactForm`; writes to default address book via JXA
+- **Edit contact** — `⌘E` opens `ContactForm` pre-populated; replaces phone/email and saves
+- **Delete contact** — `⌃X` in action panel; shows destructive confirmation dialog, then deletes via JXA and revalidates the list
+- **Actions** — Compose Email, Call, Open in Contacts, Copy phone/email/name, Refresh, Delete
 
-## Architecture
+## File map
 
 ```
 src/
-  search-contacts.tsx      ← command entry point
-  apple-contacts.ts        ← Two-phase JXA fetcher via osascript -l JavaScript
-                              fetchAppleContacts()  — bulk list (fast, ~0.4s)
-                              fetchContactDetail()  — single contact full info
-  hooks.ts                 ← useCachedPromise wrapper (useContacts)
-  types.ts                 ← UnifiedContact, ContactField, ContactAddress
-  helpers.ts               ← groupByLetter, formatBirthday
+  search-contacts.tsx         command entry; wires useContacts → ContactList
+  apple-contacts.ts           all JXA logic: bulk list fetch, detail fetch, create, update, delete;
+                                normalizeKey / mergeContacts / deduplicateContacts (exported)
+  hooks.ts                    useContacts() — useCachedPromise wrapper around fetchAppleContacts
+  types.ts                    UnifiedContact, ContactField, ContactAddress
+  helpers.ts                  groupByLetter (A–Z + "#"), formatBirthday ("YYYY-M-D" → "MM-DD[-YYYY]")
   components/
-    ContactList.tsx        ← List view (name + company only at list level)
-    ContactDetail.tsx      ← Full detail screen, fetches emails/phones on push
-    ContactActions.tsx     ← ActionPanel for list items (See Details, Copy Name, Open)
+    ContactList.tsx           split-pane List; fetches detail on selection change via useCachedPromise
+    ContactActions.tsx        ActionPanel: email/call/open/copy/refresh/delete (with confirmAlert)
+    ContactForm.tsx           create & edit form (useForm from @raycast/utils)
+  __tests__/
+    helpers.test.ts           unit tests for groupByLetter and formatBirthday
+    apple-contacts.test.ts    unit tests for normalizeKey, mergeContacts, deduplicateContacts, appleId extraction
 ```
 
 ## Key implementation details
 
-- **Two-phase loading**: list fetch is bulk JXA (name/id/company only, ~0.4s). Per-contact
-  detail (emails, phones, addresses, birthday, notes) fetched via `whose { id: ... }` on demand.
-- Uses `osascript -l JavaScript` (JXA) via Node.js `child_process.execFile` — NOT AppleScript
-- Apple Contact labels come through as `_$!<Mobile>!$_` — `formatType()` strips this everywhere
-- `useCachedPromise` from `@raycast/utils` caches between sessions (instant on subsequent opens)
-- Per-contact detail is also cached by `useCachedPromise` in `ContactDetail`
+- **JXA, not AppleScript**: `osascript -l JavaScript` via `child_process.execFile` — avoid `run-applescript`
+- **Two-phase loading**: bulk fetch (`fetchAppleContacts`) returns id/name/company only (~0.4 s). Full detail (phones, emails, addresses, birthday, notes, photo) is fetched lazily via `fetchContactDetail` keyed on the selected contact
+- **Contact photos**: JXA writes the image bytes to `/tmp/raycast-contact-<id>.jpg` and returns a `file://` URL stored in `photoUrl`
+- **Label normalization**: Apple labels arrive as `_$!<Mobile>!$_`; `formatType()` strips the wrapper in both `ContactList` and `ContactActions`
+- **Deduplication**: after bulk fetch, contacts are keyed by `normalizeKey(displayName)` (NFD accent-strip + lowercase). Same-key contacts are merged: first non-empty field wins; emails/phones take the richer side
+- **Caching**: `useCachedPromise` caches list between sessions (instant re-open); detail is also cached per-contact object reference
+
+## Performance
+
+| Operation | Speed | Notes |
+|-----------|-------|-------|
+| Bulk list fetch | ~0.4 s | Single JXA call, bulk property access |
+| Per-contact detail | ~0.1–0.3 s | `whose { id }` lookup, cached after first load |
+| Subsequent opens | instant | `useCachedPromise` hits disk cache |
 
 ## Dev workflow
 
 ```bash
-npm run dev     # live-reload in Raycast
-npm run build   # production build to dist/
-npm run lint    # ESLint via @raycast/eslint-config
+npm run dev          # live-reload in Raycast
+npm run build        # production build to dist/
+npm run lint         # ESLint via @raycast/eslint-config
+npm test             # vitest run (unit tests, no Raycast runtime needed)
+npm run test:watch   # vitest watch mode
 ```
 
 ## Possible next steps
 
-- Add a "Quick Search" no-view command that copies the primary phone/email directly
-- Show contact photos (Apple Contacts photo path via AppleScript)
-- Add keyboard shortcut to open the contact in the macOS Contacts app directly on the right person (deep link via `addressbook://` + contact ID)
-- Performance: only re-fetch if Contacts DB mtime has changed
+- Deep-link to specific contact in Contacts.app (`addressbook://<id>` if supported, or AppleScript `reveal`)
+- "Quick Search" no-view command that copies primary phone/email to clipboard directly
+- Multi-field search (search on email/phone, not just name/company)
+- Batch-detail prefetch for top N contacts after initial list load
+- Performance: skip re-fetch when Contacts DB mtime is unchanged
+- Support multiple phone/email entries in ContactForm (currently takes one each)

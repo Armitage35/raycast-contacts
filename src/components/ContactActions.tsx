@@ -1,34 +1,21 @@
-import { Action, ActionPanel, Icon } from "@raycast/api";
+import { Action, ActionPanel, Icon, confirmAlert, Alert, showToast, Toast } from "@raycast/api";
+import { deleteAppleContact } from "../apple-contacts";
 import { UnifiedContact } from "../types";
-import ContactForm from "./ContactForm";
 
 interface ContactActionsProps {
   contact: UnifiedContact;
   onRefresh: () => void;
+  onContactDeleted: () => void;
 }
 
-export default function ContactActions({ contact, onRefresh }: ContactActionsProps) {
+export default function ContactActions({ contact, onRefresh, onContactDeleted }: ContactActionsProps) {
   const primaryEmail = contact.emails[0]?.value;
   const primaryPhone = contact.phones[0]?.value;
 
   return (
     <ActionPanel>
       <ActionPanel.Section>
-        <Action.Push
-          title="Edit Contact"
-          icon={Icon.Pencil}
-          shortcut={{ modifiers: ["cmd"], key: "e" }}
-          target={<ContactForm contact={contact} onSaved={onRefresh} />}
-        />
-        <Action.Push
-          title="New Contact"
-          icon={Icon.PersonCircle}
-          shortcut={{ modifiers: ["cmd"], key: "n" }}
-          target={<ContactForm onSaved={onRefresh} />}
-        />
-      </ActionPanel.Section>
-
-      <ActionPanel.Section>
+        {/* Primary action priority: Compose Email > Call > Open in Contacts */}
         {primaryEmail && (
           <Action.Open title="Compose Email" icon={Icon.Envelope} target={`mailto:${primaryEmail}`} />
         )}
@@ -44,7 +31,7 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
           title="Open in Contacts"
           icon={Icon.TwoPeople}
           target="addressbook://"
-          shortcut={{ modifiers: ["cmd"], key: "o" }}
+          shortcut={primaryEmail || primaryPhone ? { modifiers: ["cmd"], key: "o" } : undefined}
         />
       </ActionPanel.Section>
 
@@ -77,6 +64,38 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
           icon={Icon.ArrowClockwise}
           shortcut={{ modifiers: ["cmd"], key: "r" }}
           onAction={onRefresh}
+        />
+      </ActionPanel.Section>
+
+      <ActionPanel.Section>
+        <Action
+          title="Delete Contact"
+          icon={Icon.Trash}
+          style={Action.Style.Destructive}
+          shortcut={{ modifiers: ["ctrl"], key: "x" }}
+          onAction={async () => {
+            const confirmed = await confirmAlert({
+              title: "Delete Contact",
+              message: `Are you sure you want to delete "${contact.displayName}"? This cannot be undone.`,
+              primaryAction: {
+                title: "Delete",
+                style: Alert.ActionStyle.Destructive,
+              },
+            });
+            if (!confirmed) return;
+            try {
+              const appleId = contact.id.replace("apple:", "");
+              await deleteAppleContact(appleId);
+              await showToast({ style: Toast.Style.Success, title: "Contact deleted" });
+              onContactDeleted();
+            } catch (err) {
+              await showToast({
+                style: Toast.Style.Failure,
+                title: "Failed to delete contact",
+                message: err instanceof Error ? err.message : String(err),
+              });
+            }
+          }}
         />
       </ActionPanel.Section>
     </ActionPanel>
