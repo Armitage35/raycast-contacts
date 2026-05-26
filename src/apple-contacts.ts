@@ -61,7 +61,7 @@ export function deduplicateContacts(
   const seen = new Map<string, UnifiedContact>();
   for (const contact of contacts) {
     const raw = contact.displayName;
-    if (!raw || !raw.trim()) {
+    if (!raw || !raw.trim() || raw === "Unnamed Contact") {
       seen.set(contact.id, contact);
       continue;
     }
@@ -87,17 +87,19 @@ export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
     org: string;
     primaryPhone: string;
     primaryEmail: string;
+    phones: string[];
+    emails: string[];
   }[] = JSON.parse(json || "[]");
 
   const contacts = raw
     .filter((r) => r.id)
     .map((r) => ({
       id: `apple:${r.id}`,
-      displayName: r.name || r.firstName || r.lastName || r.id,
+      displayName: r.name || r.firstName || r.lastName || "Unnamed Contact",
       firstName: r.firstName || undefined,
       lastName: r.lastName || undefined,
-      emails: [],
-      phones: [],
+      emails: (r.emails ?? []).map((v) => ({ value: v })),
+      phones: (r.phones ?? []).map((v) => ({ value: v })),
       company: r.org || undefined,
       primaryPhone: r.primaryPhone || undefined,
       primaryEmail: r.primaryEmail || undefined,
@@ -153,6 +155,20 @@ export async function fetchContactDetail(
       ? `data:image/jpeg;base64,${raw.photoBase64}`
       : undefined,
   };
+}
+
+// ─── Bulk photo fetch ─────────────────────────────────────────────────────────
+// Returns a map of contact id (e.g. "apple:<uuid>") → data URL for all contacts
+// that have image data. Uses a single native binary call for efficiency.
+
+export async function fetchAllContactPhotos(): Promise<Record<string, string>> {
+  const json = await runHelper("photos");
+  const raw: { id: string; photoBase64: string }[] = JSON.parse(json || "[]");
+  return Object.fromEntries(
+    raw
+      .filter((r) => r.id && r.photoBase64)
+      .map((r) => [`apple:${r.id}`, `data:image/jpeg;base64,${r.photoBase64}`]),
+  );
 }
 
 // ─── Delete a contact ─────────────────────────────────────────────────────────

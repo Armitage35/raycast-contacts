@@ -10,6 +10,8 @@ import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { fetchContactDetail } from "../apple-contacts";
 import { formatBirthday, groupByLetter } from "../helpers";
+import { useContactPhotos } from "../hooks";
+import { t } from "../i18n";
 import { ContactAddress, UnifiedContact } from "../types";
 import ContactActions from "./ContactActions";
 import ContactForm from "./ContactForm";
@@ -24,14 +26,14 @@ function formatAddress(a: ContactAddress): string {
   return a.formattedValue.replace(/\n/g, ", ");
 }
 
-function buildHeaderMarkdown(
+function buildDetailMarkdown(
   c: UnifiedContact,
   subtitle: string | null,
 ): string {
   const nameLine = `# ${c.displayName}`;
   const subtitleLine = subtitle ? `\n*${subtitle}*` : "";
-  const body = `${nameLine}${subtitleLine}`;
-  return c.photoUrl ? `![](${c.photoUrl})\n${body}` : body;
+  const notesSection = c.notes ? `\n\n## Notes\n\n${c.notes}` : "";
+  return `${nameLine}${subtitleLine}${notesSection}`;
 }
 
 function phoneToE164(phone: string): string {
@@ -48,13 +50,27 @@ interface ContactListProps {
   onRefresh: () => void;
 }
 
+function filterContacts(contacts: UnifiedContact[], query: string): UnifiedContact[] {
+  const q = query.trim().toLowerCase();
+  if (!q) return contacts;
+  return contacts.filter((c) => {
+    if (c.displayName.toLowerCase().includes(q)) return true;
+    if (c.company?.toLowerCase().includes(q)) return true;
+    if (c.phones.some((p) => p.value.toLowerCase().includes(q))) return true;
+    if (c.emails.some((e) => e.value.toLowerCase().includes(q))) return true;
+    return false;
+  });
+}
+
 export default function ContactList({
   contacts,
   isLoading,
   onRefresh,
 }: ContactListProps) {
   const { push } = useNavigation();
-  const sections = groupByLetter(contacts);
+  const [searchText, setSearchText] = useState("");
+  const filteredContacts = filterContacts(contacts, searchText);
+  const sections = groupByLetter(filteredContacts);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const selectedContact = contacts.find((c) => c.id === selectedId) ?? null;
@@ -69,38 +85,40 @@ export default function ContactList({
     },
   );
 
+  // Eagerly loaded photo map: id → data URL. Starts loading in the background
+  // right after the component mounts so avatars are ready without selecting.
+  const { data: photoMap } = useContactPhotos();
+
   return (
     <List
       isLoading={isLoading}
       isShowingDetail
-      searchBarPlaceholder="Search contacts…"
+      filtering={false}
+      searchBarPlaceholder={t("search_contacts_placeholder")}
+      onSearchTextChange={setSearchText}
       onSelectionChange={(id) => setSelectedId(id ?? null)}
     >
       <List.EmptyView
-        title={isLoading ? "Loading Contacts…" : "No Contacts Found"}
-        description={
-          isLoading
-            ? undefined
-            : "Try a different search, or press ⌘O to open the Contacts app."
-        }
+        title={isLoading ? t("loading_contacts") : t("no_contacts_found")}
+        description={isLoading ? undefined : t("no_contacts_description")}
         icon={Icon.TwoPeople}
         actions={
           !isLoading ? (
             <ActionPanel>
               <Action
-                title="New Contact"
+                title={t("action_new_contact")}
                 icon={Icon.PersonCircle}
                 shortcut={{ modifiers: ["cmd"], key: "n" }}
                 onAction={() => push(<ContactForm onSaved={onRefresh} />)}
               />
               <Action.Open
-                title="Open Contacts App"
+                title={t("action_open_contacts_app")}
                 icon={Icon.TwoPeople}
                 target="addressbook://"
                 shortcut={{ modifiers: ["cmd"], key: "o" }}
               />
               <Action
-                title="Refresh"
+                title={t("action_refresh")}
                 icon={Icon.ArrowClockwise}
                 shortcut={{ modifiers: ["cmd"], key: "r" }}
                 onAction={onRefresh}
@@ -120,7 +138,10 @@ export default function ContactList({
             const displayContact =
               isSelected && detailContact ? detailContact : contact;
 
-            const photoUrl = displayContact.photoUrl ?? contact.photoUrl;
+            const photoUrl =
+              displayContact.photoUrl ??
+              contact.photoUrl ??
+              photoMap?.[contact.id];
             const icon = photoUrl
               ? { source: photoUrl, mask: Image.Mask.Circle }
               : getAvatarIcon(contact.displayName);
@@ -135,33 +156,32 @@ export default function ContactList({
                   contact.firstName ?? "",
                   contact.lastName ?? "",
                   contact.company ?? "",
-                  contact.primaryPhone ?? "",
-                  contact.primaryEmail ?? "",
+                  ...contact.phones.map((p) => p.value),
+                  ...contact.emails.map((e) => e.value),
                 ]}
                 detail={(() => {
                   const phones = displayContact.phones ?? [];
                   const emails = displayContact.emails ?? [];
                   const addresses = displayContact.addresses ?? [];
                   const birthday = formatBirthday(displayContact.birthday);
-                  const notes = displayContact.notes;
 
                   const subtitle =
                     displayContact.jobTitle || displayContact.company
                       ? [displayContact.jobTitle, displayContact.company]
                           .filter(Boolean)
-                          .join(" at ")
+                          .join(t("subtitle_at"))
                       : null;
 
                   return (
                     <List.Item.Detail
-                      markdown={buildHeaderMarkdown(displayContact, subtitle)}
+                      markdown={buildDetailMarkdown(displayContact, subtitle)}
                       isLoading={isSelected && isLoadingDetail}
                       metadata={
                         <List.Item.Detail.Metadata>
                           {phones.map((p, i) => (
                             <List.Item.Detail.Metadata.Link
                               key={i}
-                              title={i === 0 ? "Phone" : ""}
+                              title={i === 0 ? t("label_phone") : ""}
                               text={`${p.value}${p.type ? `  (${formatType(p.type)})` : ""}`}
                               target={`tel:${phoneToE164(p.value)}`}
                             />
@@ -174,7 +194,7 @@ export default function ContactList({
                           {emails.map((e, i) => (
                             <List.Item.Detail.Metadata.Link
                               key={i}
-                              title={i === 0 ? "Email" : ""}
+                              title={i === 0 ? t("label_email") : ""}
                               text={`${e.value}${e.type ? `  (${formatType(e.type)})` : ""}`}
                               target={`mailto:${e.value}`}
                             />
@@ -187,7 +207,7 @@ export default function ContactList({
                           {addresses.map((a, i) => (
                             <List.Item.Detail.Metadata.Link
                               key={i}
-                              title={i === 0 ? "Address" : ""}
+                              title={i === 0 ? t("label_address") : ""}
                               text={`${formatAddress(a)}${a.type ? `  (${formatType(a.type)})` : ""}`}
                               target={addressToMapsUrl(formatAddress(a))}
                             />
@@ -196,17 +216,9 @@ export default function ContactList({
                           {birthday && <List.Item.Detail.Metadata.Separator />}
                           {birthday && (
                             <List.Item.Detail.Metadata.Label
-                              title="Birthday"
+                              title={t("label_birthday")}
                               text={birthday}
                               icon={Icon.Calendar}
-                            />
-                          )}
-
-                          {notes && <List.Item.Detail.Metadata.Separator />}
-                          {notes && (
-                            <List.Item.Detail.Metadata.Label
-                              title="Notes"
-                              text={notes}
                             />
                           )}
                         </List.Item.Detail.Metadata>

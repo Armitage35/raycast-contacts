@@ -1,4 +1,4 @@
-# Contacts Search
+# Apple Contacts
 
 Search, create, edit, and delete your Apple Contacts directly from Raycast — with a rich split-pane detail view showing photos, phone numbers, emails, addresses, birthday, job title, and notes.
 

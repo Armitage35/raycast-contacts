@@ -12,6 +12,7 @@ import {
   updateAppleContact,
   ContactFormValues,
 } from "../apple-contacts";
+import { t } from "../i18n";
 import { UnifiedContact } from "../types";
 
 interface ContactFormProps {
@@ -28,15 +29,17 @@ export default function ContactForm({ contact, onSaved }: ContactFormProps) {
       if (!values.firstName.trim() && !values.lastName.trim()) {
         await showToast({
           style: Toast.Style.Failure,
-          title: "Name required",
-          message: "Please enter at least a first or last name.",
+          title: t("toast_name_required"),
+          message: t("toast_name_required_message"),
         });
         return;
       }
 
       const toast = await showToast({
         style: Toast.Style.Animated,
-        title: isEditing ? "Saving contact…" : "Creating contact…",
+        title: isEditing
+          ? t("toast_saving_contact")
+          : t("toast_creating_contact"),
       });
 
       try {
@@ -47,14 +50,16 @@ export default function ContactForm({ contact, onSaved }: ContactFormProps) {
           await createAppleContact(values);
         }
         toast.style = Toast.Style.Success;
-        toast.title = isEditing ? "Contact updated" : "Contact created";
+        toast.title = isEditing
+          ? t("toast_contact_updated")
+          : t("toast_contact_created");
         onSaved();
         pop();
       } catch (error) {
         toast.style = Toast.Style.Failure;
         toast.title = isEditing
-          ? "Failed to update contact"
-          : "Failed to create contact";
+          ? t("toast_failed_update_contact")
+          : t("toast_failed_create_contact");
         toast.message = String(error);
       }
     },
@@ -72,51 +77,61 @@ export default function ContactForm({ contact, onSaved }: ContactFormProps) {
   return (
     <Form
       navigationTitle={
-        isEditing ? `Edit ${contact?.displayName ?? "Contact"}` : "New Contact"
+        isEditing
+          ? t("form_title_edit", {
+              name: contact?.displayName ?? t("contact_singular"),
+            })
+          : t("form_title_new")
       }
       actions={
         <ActionPanel>
           <Action.SubmitForm
-            title={isEditing ? "Save Contact" : "Create Contact"}
+            title={
+              isEditing ? t("action_save_contact") : t("action_create_contact")
+            }
             onSubmit={handleSubmit}
           />
         </ActionPanel>
       }
     >
       <Form.TextField
-        title="First Name"
-        placeholder="First"
+        title={t("field_first_name")}
+        placeholder={t("placeholder_first_name")}
         {...itemProps.firstName}
       />
       <Form.TextField
-        title="Last Name"
-        placeholder="Last"
+        title={t("field_last_name")}
+        placeholder={t("placeholder_last_name")}
         {...itemProps.lastName}
       />
       <Form.Separator />
       <Form.TextField
-        title="Company"
-        placeholder="Acme Corp"
+        title={t("field_company")}
+        placeholder={t("placeholder_company")}
         {...itemProps.company}
       />
       <Form.TextField
-        title="Job Title"
-        placeholder="Engineer"
+        title={t("field_job_title")}
+        placeholder={t("placeholder_job_title")}
         {...itemProps.jobTitle}
       />
       <Form.Separator />
       <Form.TextField
-        title="Phone"
-        placeholder="+1 (555) 000-0000"
+        title={t("field_phone")}
+        placeholder={t("placeholder_phone")}
         {...itemProps.phone}
       />
       <Form.TextField
-        title="Email"
-        placeholder="name@example.com"
+        title={t("field_email")}
+        placeholder={t("placeholder_email")}
         {...itemProps.email}
       />
       <Form.Separator />
-      <Form.TextArea title="Notes" placeholder="Notes…" {...itemProps.notes} />
+      <Form.TextArea
+        title={t("field_notes")}
+        placeholder={t("placeholder_notes")}
+        {...itemProps.notes}
+      />
     </Form>
   );
 }
