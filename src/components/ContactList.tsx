@@ -14,7 +14,8 @@ function formatType(type: string | undefined): string {
 
 function buildMarkdown(c: UnifiedContact): string {
   const birthday = formatBirthday(c.birthday);
-  const lines: string[] = [`# ${c.displayName}`];
+  const photoMd = c.photoUrl ? `![](${c.photoUrl})\n\n` : "";
+  const lines: string[] = [photoMd + `# ${c.displayName}`];
   if (c.company || c.jobTitle) {
     lines.push([c.jobTitle, c.company].filter(Boolean).join(" · "));
   }
@@ -117,13 +118,14 @@ export default function ContactList({
           subtitle={`${sectionContacts.length}`}
         >
           {sectionContacts.map((contact) => {
-            const icon = contact.photoUrl
-              ? { source: contact.photoUrl, mask: Image.Mask.Circle }
-              : getAvatarIcon(contact.displayName);
-
             const isSelected = contact.id === selectedId;
             const displayContact =
               isSelected && detailContact ? detailContact : contact;
+
+            const photoUrl = displayContact.photoUrl ?? contact.photoUrl;
+            const icon = photoUrl
+              ? { source: photoUrl, mask: Image.Mask.Circle }
+              : getAvatarIcon(contact.displayName);
 
             return (
               <List.Item
