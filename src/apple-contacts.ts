@@ -90,16 +90,16 @@ tell application "Contacts"
       set addrStr to ""
       repeat with a in (addresses of p)
         try
-          set at to ""
+          set addrLabel to ""
           try
-            set at to (label of a) as string
+            set addrLabel to (label of a) as string
           end try
           set fmtAddr to ""
           try
             set fmtAddr to (formatted address of a) as string
           end try
           if fmtAddr is not "" then
-            set addrStr to addrStr & fmtAddr & vs & at & ","
+            set addrStr to addrStr & fmtAddr & vs & addrLabel & ","
           end if
         end try
       end repeat

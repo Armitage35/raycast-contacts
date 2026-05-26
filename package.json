@@ -11,7 +11,7 @@
     {
       "name": "search-contacts",
       "title": "Search Contacts",
-      "subtitle": "Apple & Google",
+      "subtitle": "Contacts",
       "description": "Search contacts across Apple Contacts and Google Contacts with a full detail view.",
       "mode": "view"
     }
