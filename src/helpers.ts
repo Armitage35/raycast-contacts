@@ -1,8 +1,6 @@
 import { UnifiedContact } from "./types";
 
-export function formatBirthday(
-  birthday: string | undefined,
-): string | undefined {
+export function formatBirthday(birthday: string | undefined): string | undefined {
   if (!birthday) return undefined;
 
   const parts = birthday.split("-").map(Number);
@@ -46,9 +44,7 @@ export function formatType(type: string | undefined): string {
   return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 }
 
-export function groupByLetter(
-  contacts: UnifiedContact[],
-): [string, UnifiedContact[]][] {
+export function groupByLetter(contacts: UnifiedContact[]): [string, UnifiedContact[]][] {
   const groups: Record<string, UnifiedContact[]> = {};
   for (const contact of contacts) {
     const ch = contact.displayName.charAt(0).toUpperCase();

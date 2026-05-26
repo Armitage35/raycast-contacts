@@ -8,11 +8,7 @@ function makeContact(displayName: string, id = displayName): UnifiedContact {
 
 describe("groupByLetter", () => {
   it("groups contacts by their first letter", () => {
-    const contacts = [
-      makeContact("Alice"),
-      makeContact("Bob"),
-      makeContact("Anna"),
-    ];
+    const contacts = [makeContact("Alice"), makeContact("Bob"), makeContact("Anna")];
     const groups = groupByLetter(contacts);
     const letters = groups.map(([l]) => l);
     expect(letters).toContain("A");
@@ -30,22 +26,14 @@ describe("groupByLetter", () => {
   });
 
   it("sorts '#' to the end", () => {
-    const contacts = [
-      makeContact("42nd Street"),
-      makeContact("Zara"),
-      makeContact("Apple"),
-    ];
+    const contacts = [makeContact("42nd Street"), makeContact("Zara"), makeContact("Apple")];
     const groups = groupByLetter(contacts);
     const last = groups[groups.length - 1];
     expect(last[0]).toBe("#");
   });
 
   it("sorts letter sections alphabetically", () => {
-    const contacts = [
-      makeContact("Zara"),
-      makeContact("Alice"),
-      makeContact("Mike"),
-    ];
+    const contacts = [makeContact("Zara"), makeContact("Alice"), makeContact("Mike")];
     const groups = groupByLetter(contacts);
     const letters = groups.map(([l]) => l);
     expect(letters).toEqual(["A", "M", "Z"]);

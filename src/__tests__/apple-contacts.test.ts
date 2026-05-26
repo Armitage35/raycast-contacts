@@ -1,14 +1,8 @@
 import { describe, it, expect } from "vitest";
-import {
-  normalizeKey,
-  mergeContacts,
-  deduplicateContacts,
-} from "../apple-contacts";
+import { normalizeKey, mergeContacts, deduplicateContacts } from "../apple-contacts";
 import { UnifiedContact } from "../types";
 
-function makeContact(
-  overrides: Partial<UnifiedContact> & { id: string; displayName: string },
-): UnifiedContact {
+function makeContact(overrides: Partial<UnifiedContact> & { id: string; displayName: string }): UnifiedContact {
   return { emails: [], phones: [], ...overrides };
 }
 
@@ -155,10 +149,7 @@ describe("deduplicateContacts", () => {
   });
 
   it("keeps contacts with different names separate", () => {
-    const contacts = [
-      makeContact({ id: "1", displayName: "Alice" }),
-      makeContact({ id: "2", displayName: "Bob" }),
-    ];
+    const contacts = [makeContact({ id: "1", displayName: "Alice" }), makeContact({ id: "2", displayName: "Bob" })];
     expect(deduplicateContacts(contacts)).toHaveLength(2);
   });
 
@@ -183,10 +174,7 @@ describe("deduplicateContacts", () => {
   });
 
   it("does not deduplicate contacts with empty display names — uses id as key", () => {
-    const contacts = [
-      makeContact({ id: "1", displayName: "" }),
-      makeContact({ id: "2", displayName: "" }),
-    ];
+    const contacts = [makeContact({ id: "1", displayName: "" }), makeContact({ id: "2", displayName: "" })];
     expect(deduplicateContacts(contacts)).toHaveLength(2);
   });
 

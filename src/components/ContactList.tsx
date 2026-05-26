@@ -1,11 +1,4 @@
-import {
-  Action,
-  ActionPanel,
-  Icon,
-  Image,
-  List,
-  useNavigation,
-} from "@raycast/api";
+import { Action, ActionPanel, Icon, Image, List, useNavigation } from "@raycast/api";
 import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { fetchContactDetail } from "../apple-contacts";
@@ -19,10 +12,7 @@ function formatAddress(a: ContactAddress): string {
   return a.formattedValue.replace(/\n/g, ", ");
 }
 
-function buildDetailMarkdown(
-  c: UnifiedContact,
-  subtitle: string | null,
-): string {
+function buildDetailMarkdown(c: UnifiedContact, subtitle: string | null): string {
   const nameLine = `# ${c.displayName}`;
   const subtitleLine = subtitle ? `\n*${subtitle}*` : "";
   const notesSection = c.notes ? `\n\n## Notes\n\n${c.notes}` : "";
@@ -43,10 +33,7 @@ interface ContactListProps {
   onRefresh: () => void;
 }
 
-function filterContacts(
-  contacts: UnifiedContact[],
-  query: string,
-): UnifiedContact[] {
+function filterContacts(contacts: UnifiedContact[], query: string): UnifiedContact[] {
   const q = query.trim().toLowerCase();
   if (!q) return contacts;
   return contacts.filter((c) => {
@@ -58,11 +45,7 @@ function filterContacts(
   });
 }
 
-export default function ContactList({
-  contacts,
-  isLoading,
-  onRefresh,
-}: ContactListProps) {
+export default function ContactList({ contacts, isLoading, onRefresh }: ContactListProps) {
   const { push } = useNavigation();
   const [searchText, setSearchText] = useState("");
   const filteredContacts = filterContacts(contacts, searchText);
@@ -96,11 +79,7 @@ export default function ContactList({
     >
       <List.EmptyView
         title={isLoading ? "Loading Contacts…" : "No Contacts Found"}
-        description={
-          isLoading
-            ? undefined
-            : "Try a different search, or press ⌘O to open the Contacts app."
-        }
+        description={isLoading ? undefined : "Try a different search, or press ⌘O to open the Contacts app."}
         icon={Icon.TwoPeople}
         actions={
           !isLoading ? (
@@ -128,23 +107,13 @@ export default function ContactList({
         }
       />
       {sections.map(([letter, sectionContacts]) => (
-        <List.Section
-          key={letter}
-          title={letter}
-          subtitle={`${sectionContacts.length}`}
-        >
+        <List.Section key={letter} title={letter} subtitle={`${sectionContacts.length}`}>
           {sectionContacts.map((contact) => {
             const isSelected = contact.id === selectedId;
-            const displayContact =
-              isSelected && detailContact ? detailContact : contact;
+            const displayContact = isSelected && detailContact ? detailContact : contact;
 
-            const photoUrl =
-              displayContact.photoUrl ??
-              contact.photoUrl ??
-              photoMap?.[contact.id];
-            const icon = photoUrl
-              ? { source: photoUrl, mask: Image.Mask.Circle }
-              : getAvatarIcon(contact.displayName);
+            const photoUrl = displayContact.photoUrl ?? contact.photoUrl ?? photoMap?.[contact.id];
+            const icon = photoUrl ? { source: photoUrl, mask: Image.Mask.Circle } : getAvatarIcon(contact.displayName);
 
             return (
               <List.Item
@@ -167,9 +136,7 @@ export default function ContactList({
 
                   const subtitle =
                     displayContact.jobTitle || displayContact.company
-                      ? [displayContact.jobTitle, displayContact.company]
-                          .filter(Boolean)
-                          .join(" at ")
+                      ? [displayContact.jobTitle, displayContact.company].filter(Boolean).join(" at ")
                       : null;
 
                   return (
@@ -187,9 +154,7 @@ export default function ContactList({
                             />
                           ))}
 
-                          {phones.length > 0 && emails.length > 0 && (
-                            <List.Item.Detail.Metadata.Separator />
-                          )}
+                          {phones.length > 0 && emails.length > 0 && <List.Item.Detail.Metadata.Separator />}
 
                           {emails.map((e, i) => (
                             <List.Item.Detail.Metadata.Link
@@ -200,10 +165,9 @@ export default function ContactList({
                             />
                           ))}
 
-                          {addresses.length > 0 &&
-                            (emails.length > 0 || phones.length > 0) && (
-                              <List.Item.Detail.Metadata.Separator />
-                            )}
+                          {addresses.length > 0 && (emails.length > 0 || phones.length > 0) && (
+                            <List.Item.Detail.Metadata.Separator />
+                          )}
                           {addresses.map((a, i) => (
                             <List.Item.Detail.Metadata.Link
                               key={i}
@@ -215,11 +179,7 @@ export default function ContactList({
 
                           {birthday && <List.Item.Detail.Metadata.Separator />}
                           {birthday && (
-                            <List.Item.Detail.Metadata.Label
-                              title="Birthday"
-                              text={birthday}
-                              icon={Icon.Calendar}
-                            />
+                            <List.Item.Detail.Metadata.Label title="Birthday" text={birthday} icon={Icon.Calendar} />
                           )}
                         </List.Item.Detail.Metadata>
                       }

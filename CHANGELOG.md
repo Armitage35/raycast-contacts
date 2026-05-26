@@ -1,6 +1,6 @@
 # Apple Contacts Changelog
 
-## [Initial Release] - 2026-05-26
+## [Initial Release] - {PR_MERGE_DATE}
 
 - Search, create, edit, and delete Apple Contacts from Raycast
 - Split-pane layout with alphabetically-sectioned list and rich detail panel

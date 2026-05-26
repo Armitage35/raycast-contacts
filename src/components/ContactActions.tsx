@@ -1,13 +1,4 @@
-import {
-  Action,
-  ActionPanel,
-  Icon,
-  confirmAlert,
-  Alert,
-  showToast,
-  Toast,
-  useNavigation,
-} from "@raycast/api";
+import { Action, ActionPanel, Icon, confirmAlert, Alert, showToast, Toast, useNavigation } from "@raycast/api";
 import { deleteAppleContact } from "../apple-contacts";
 import { formatType } from "../helpers";
 import { UnifiedContact } from "../types";
@@ -34,34 +25,20 @@ export default function ContactActions({
     <ActionPanel>
       <ActionPanel.Section>
         {/* Primary action priority: Compose Email > Call > Open in Contacts */}
-        {primaryEmail && (
-          <Action.Open
-            title="Compose Email"
-            icon={Icon.Envelope}
-            target={`mailto:${primaryEmail}`}
-          />
-        )}
+        {primaryEmail && <Action.Open title="Compose Email" icon={Icon.Envelope} target={`mailto:${primaryEmail}`} />}
         {primaryPhone && (
           <Action.Open
             title="Call"
             icon={Icon.Phone}
             target={`tel:${primaryPhone}`}
-            shortcut={
-              primaryEmail
-                ? { modifiers: ["cmd", "shift"], key: "c" }
-                : undefined
-            }
+            shortcut={primaryEmail ? { modifiers: ["cmd", "shift"], key: "c" } : undefined}
           />
         )}
         <Action.Open
           title="Open in Contacts"
           icon={Icon.TwoPeople}
           target="addressbook://"
-          shortcut={
-            primaryEmail || primaryPhone
-              ? { modifiers: ["cmd"], key: "o" }
-              : undefined
-          }
+          shortcut={primaryEmail || primaryPhone ? { modifiers: ["cmd"], key: "o" } : undefined}
         />
         {contact.addresses && contact.addresses.length > 0 && (
           <Action.OpenInBrowser
@@ -79,17 +56,11 @@ export default function ContactActions({
             key={p.value}
             title={copyTitle(p.type, "phone")}
             content={p.value}
-            shortcut={
-              i === 0 ? { modifiers: ["cmd", "shift"], key: "p" } : undefined
-            }
+            shortcut={i === 0 ? { modifiers: ["cmd", "shift"], key: "p" } : undefined}
           />
         ))}
         {contact.emails.map((e) => (
-          <Action.CopyToClipboard
-            key={e.value}
-            title={copyTitle(e.type, "email")}
-            content={e.value}
-          />
+          <Action.CopyToClipboard key={e.value} title={copyTitle(e.type, "email")} content={e.value} />
         ))}
         <Action.CopyToClipboard
           title="Copy Name"
