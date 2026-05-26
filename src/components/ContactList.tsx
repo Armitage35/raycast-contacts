@@ -37,11 +37,13 @@ function buildMarkdown(c: UnifiedContact): string {
   if ((c.addresses ?? []).length > 0) {
     lines.push("### Address");
     for (const a of c.addresses!) {
-      lines.push(`- ${a.formattedValue.replace(/\n/g, ", ")}${a.type ? `  *(${formatType(a.type)})*` : ""}`);
+      lines.push(
+        `- ${a.formattedValue.replace(/\n/g, ", ")}${a.type ? `  *(${formatType(a.type)})*` : ""}`,
+      );
     }
     lines.push("");
   }
-  if (birthday) lines.push(`### Birthday\n- ${birthday}\n`);
+  if (birthday) lines.push(`### Birthday\n- 🎂 ${birthday}\n`);
   if (c.notes) lines.push(`### Notes\n${c.notes}`);
 
   return lines.join("\n");
@@ -53,7 +55,11 @@ interface ContactListProps {
   onRefresh: () => void;
 }
 
-export default function ContactList({ contacts, isLoading, onRefresh }: ContactListProps) {
+export default function ContactList({
+  contacts,
+  isLoading,
+  onRefresh,
+}: ContactListProps) {
   const sections = groupByLetter(contacts);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -79,7 +85,11 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
     >
       <List.EmptyView
         title={isLoading ? "Loading Contacts…" : "No Contacts Found"}
-        description={isLoading ? undefined : "Try a different search, or press ⌘O to open the Contacts app."}
+        description={
+          isLoading
+            ? undefined
+            : "Try a different search, or press ⌘O to open the Contacts app."
+        }
         icon={Icon.TwoPeople}
         actions={
           !isLoading ? (
@@ -101,14 +111,19 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
         }
       />
       {sections.map(([letter, sectionContacts]) => (
-        <List.Section key={letter} title={letter} subtitle={`${sectionContacts.length}`}>
+        <List.Section
+          key={letter}
+          title={letter}
+          subtitle={`${sectionContacts.length}`}
+        >
           {sectionContacts.map((contact) => {
             const icon = contact.photoUrl
               ? { source: contact.photoUrl, mask: Image.Mask.Circle }
               : getAvatarIcon(contact.displayName);
 
             const isSelected = contact.id === selectedId;
-            const displayContact = isSelected && detailContact ? detailContact : contact;
+            const displayContact =
+              isSelected && detailContact ? detailContact : contact;
 
             return (
               <List.Item
@@ -117,14 +132,24 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
                 title={contact.displayName}
                 subtitle={contact.company ?? ""}
                 icon={icon}
-                keywords={[contact.firstName ?? "", contact.lastName ?? "", contact.company ?? ""]}
+                keywords={[
+                  contact.firstName ?? "",
+                  contact.lastName ?? "",
+                  contact.company ?? "",
+                ]}
                 detail={
                   <List.Item.Detail
                     markdown={buildMarkdown(displayContact)}
                     isLoading={isSelected && isLoadingDetail}
                   />
                 }
-                actions={<ContactActions contact={displayContact} onRefresh={onRefresh} onContactDeleted={onRefresh} />}
+                actions={
+                  <ContactActions
+                    contact={displayContact}
+                    onRefresh={onRefresh}
+                    onContactDeleted={onRefresh}
+                  />
+                }
               />
             );
           })}

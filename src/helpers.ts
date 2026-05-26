@@ -1,21 +1,77 @@
 import { UnifiedContact } from "./types";
 
-export function formatBirthday(birthday: string | undefined): string | undefined {
+export function formatBirthday(
+  birthday: string | undefined,
+): string | undefined {
   if (!birthday) return undefined;
+
   const parts = birthday.split("-").map(Number);
   if (parts.some(isNaN)) return birthday;
+
+  let year: number | undefined;
+  let month: number;
+  let day: number;
+
   if (parts.length === 3) {
-    const [year, month, day] = parts;
-    return `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}${year > 1 ? `-${year}` : ""}`;
+    [year, month, day] = parts;
+  } else if (parts.length === 2) {
+    [month, day] = parts;
+  } else {
+    return birthday;
   }
-  if (parts.length === 2) {
-    const [month, day] = parts;
-    return `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+
+  try {
+    const locale = Intl.DateTimeFormat().resolvedOptions().locale;
+
+    if (year && year > 1) {
+      const date = new Date(year, month - 1, day);
+      return new Intl.DateTimeFormat(locale, {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      }).format(date);
+    } else {
+      const date = new Date(2000, month - 1, day);
+      return new Intl.DateTimeFormat(locale, {
+        month: "long",
+        day: "numeric",
+      }).format(date);
+    }
+  } catch {
+    return birthday;
   }
-  return birthday;
 }
 
-export function groupByLetter(contacts: UnifiedContact[]): [string, UnifiedContact[]][] {
+export function isUpcomingBirthday(
+  birthday: string | undefined,
+  withinDays = 30,
+): boolean {
+  if (!birthday) return false;
+  const parts = birthday.split("-").map(Number);
+  if (parts.some(isNaN)) return false;
+
+  let month: number;
+  let day: number;
+
+  if (parts.length === 3) {
+    [, month, day] = parts;
+  } else if (parts.length === 2) {
+    [month, day] = parts;
+  } else {
+    return false;
+  }
+
+  const today = new Date();
+  const thisYear = today.getFullYear();
+  const bday = new Date(thisYear, month - 1, day);
+  if (bday < today) bday.setFullYear(thisYear + 1);
+  const diff = (bday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24);
+  return diff >= 0 && diff <= withinDays;
+}
+
+export function groupByLetter(
+  contacts: UnifiedContact[],
+): [string, UnifiedContact[]][] {
   const groups: Record<string, UnifiedContact[]> = {};
   for (const contact of contacts) {
     const ch = contact.displayName.charAt(0).toUpperCase();
