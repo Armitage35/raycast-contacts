@@ -106,7 +106,6 @@ export default function ContactList({
     <List
       isLoading={isLoading}
       isShowingDetail
-      navigationTitle="Search Contacts"
       searchBarPlaceholder="Search contacts…"
       onSelectionChange={(id) => setSelectedId(id ?? null)}
     >

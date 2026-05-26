@@ -66,7 +66,7 @@ export default function ContactActions({
         {contact.phones.map((p, i) => (
           <Action.CopyToClipboard
             key={p.value}
-            title={`Copy ${formatType(p.type)} Phone`}
+            title={copyTitle(p.type, "Phone")}
             content={p.value}
             shortcut={
               i === 0 ? { modifiers: ["cmd", "shift"], key: "p" } : undefined
@@ -76,7 +76,7 @@ export default function ContactActions({
         {contact.emails.map((e) => (
           <Action.CopyToClipboard
             key={e.value}
-            title={`Copy ${formatType(e.type)} Email`}
+            title={copyTitle(e.type, "Email")}
             content={e.value}
           />
         ))}
@@ -155,4 +155,9 @@ function formatType(type: string | undefined): string {
   if (!type) return "";
   const clean = type.replace(/^_\$!<(.+)>!\$_$/, "$1");
   return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+}
+
+function copyTitle(type: string | undefined, field: string): string {
+  const label = formatType(type);
+  return label ? `Copy ${label} ${field}` : `Copy ${field}`;
 }
