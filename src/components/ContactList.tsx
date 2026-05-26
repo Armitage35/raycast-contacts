@@ -10,7 +10,7 @@ import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { fetchContactDetail } from "../apple-contacts";
 import { formatBirthday, groupByLetter } from "../helpers";
-import { UnifiedContact } from "../types";
+import { ContactAddress, UnifiedContact } from "../types";
 import ContactActions from "./ContactActions";
 import ContactForm from "./ContactForm";
 
@@ -20,8 +20,11 @@ function formatType(type: string | undefined): string {
   return clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
 }
 
-function buildMarkdown(c: UnifiedContact): string {
-  const birthday = formatBirthday(c.birthday);
+function formatAddress(a: ContactAddress): string {
+  return a.formattedValue.replace(/\n/g, ", ");
+}
+
+function buildHeaderMarkdown(c: UnifiedContact): string {
   const lines: string[] = [];
 
   if (c.photoUrl) lines.push(`![](${c.photoUrl})\n`);
@@ -31,45 +34,6 @@ function buildMarkdown(c: UnifiedContact): string {
   if (c.jobTitle || c.company) {
     const subtitle = [c.jobTitle, c.company].filter(Boolean).join(" at ");
     lines.push(`*${subtitle}*`);
-  }
-
-  lines.push("\n---\n");
-
-  if (c.phones.length > 0) {
-    lines.push("📞 **Phone**");
-    for (const p of c.phones) {
-      lines.push(`- ${p.value}${p.type ? ` — *${formatType(p.type)}*` : ""}`);
-    }
-    lines.push("");
-  }
-
-  if (c.emails.length > 0) {
-    lines.push("✉️ **Email**");
-    for (const e of c.emails) {
-      lines.push(`- ${e.value}${e.type ? ` — *${formatType(e.type)}*` : ""}`);
-    }
-    lines.push("");
-  }
-
-  if ((c.addresses ?? []).length > 0) {
-    lines.push("🏠 **Address**");
-    for (const a of c.addresses!) {
-      lines.push(
-        `- ${a.formattedValue.replace(/\n/g, ", ")}${a.type ? ` — *${formatType(a.type)}*` : ""}`,
-      );
-    }
-    lines.push("");
-  }
-
-  if (birthday) {
-    lines.push("🎂 **Birthday**");
-    lines.push(birthday);
-    lines.push("");
-  }
-
-  if (c.notes) {
-    lines.push("📝 **Notes**");
-    lines.push(c.notes);
   }
 
   return lines.join("\n");
@@ -171,12 +135,73 @@ export default function ContactList({
                   contact.primaryPhone ?? "",
                   contact.primaryEmail ?? "",
                 ]}
-                detail={
-                  <List.Item.Detail
-                    markdown={buildMarkdown(displayContact)}
-                    isLoading={isSelected && isLoadingDetail}
-                  />
-                }
+                detail={(() => {
+                  const phones = displayContact.phones ?? [];
+                  const emails = displayContact.emails ?? [];
+                  const addresses = displayContact.addresses ?? [];
+                  const birthday = formatBirthday(displayContact.birthday);
+                  const notes = displayContact.notes;
+
+                  return (
+                    <List.Item.Detail
+                      markdown={buildHeaderMarkdown(displayContact)}
+                      isLoading={isSelected && isLoadingDetail}
+                      metadata={
+                        <List.Item.Detail.Metadata>
+                          {phones.map((p, i) => (
+                            <List.Item.Detail.Metadata.Label
+                              key={i}
+                              title={i === 0 ? "Phone" : ""}
+                              text={`${p.value}${p.type ? `  (${formatType(p.type)})` : ""}`}
+                              icon={i === 0 ? Icon.Phone : undefined}
+                            />
+                          ))}
+
+                          {phones.length > 0 && emails.length > 0 && (
+                            <List.Item.Detail.Metadata.Separator />
+                          )}
+
+                          {emails.map((e, i) => (
+                            <List.Item.Detail.Metadata.Label
+                              key={i}
+                              title={i === 0 ? "Email" : ""}
+                              text={`${e.value}${e.type ? `  (${formatType(e.type)})` : ""}`}
+                              icon={i === 0 ? Icon.Envelope : undefined}
+                            />
+                          ))}
+
+                          {addresses.length > 0 && (
+                            <List.Item.Detail.Metadata.Separator />
+                          )}
+                          {addresses.map((a, i) => (
+                            <List.Item.Detail.Metadata.Label
+                              key={i}
+                              title={i === 0 ? "Address" : ""}
+                              text={`${formatAddress(a)}${a.type ? `  (${formatType(a.type)})` : ""}`}
+                            />
+                          ))}
+
+                          {birthday && <List.Item.Detail.Metadata.Separator />}
+                          {birthday && (
+                            <List.Item.Detail.Metadata.Label
+                              title="Birthday"
+                              text={birthday}
+                              icon={Icon.Calendar}
+                            />
+                          )}
+
+                          {notes && <List.Item.Detail.Metadata.Separator />}
+                          {notes && (
+                            <List.Item.Detail.Metadata.Label
+                              title="Notes"
+                              text={notes}
+                            />
+                          )}
+                        </List.Item.Detail.Metadata>
+                      }
+                    />
+                  );
+                })()}
                 actions={
                   <ContactActions
                     contact={displayContact}
