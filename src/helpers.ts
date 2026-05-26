@@ -3,6 +3,7 @@ import { UnifiedContact } from "./types";
 export function formatBirthday(birthday: string | undefined): string | undefined {
   if (!birthday) return undefined;
   const parts = birthday.split("-").map(Number);
+  if (parts.some(isNaN)) return birthday;
   if (parts.length === 3) {
     const [year, month, day] = parts;
     return `${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}${year > 1 ? `-${year}` : ""}`;

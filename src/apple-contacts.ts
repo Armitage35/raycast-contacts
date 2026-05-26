@@ -1,5 +1,6 @@
 import { execFile } from "child_process";
 import { promisify } from "util";
+import { formatPhoneNumber } from "./format-phone";
 import { UnifiedContact } from "./types";
 
 export interface ContactFormValues {
@@ -42,7 +43,7 @@ for (var i = 0; i < ids.length; i++) {
 JSON.stringify(out);
 `;
 
-function normalizeKey(name: string): string {
+export function normalizeKey(name: string): string {
   return name
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
@@ -50,7 +51,7 @@ function normalizeKey(name: string): string {
     .toLowerCase();
 }
 
-function mergeContacts(a: UnifiedContact, b: UnifiedContact): UnifiedContact {
+export function mergeContacts(a: UnifiedContact, b: UnifiedContact): UnifiedContact {
   return {
     ...a,
     firstName: a.firstName || b.firstName,
@@ -62,7 +63,7 @@ function mergeContacts(a: UnifiedContact, b: UnifiedContact): UnifiedContact {
   };
 }
 
-function deduplicateContacts(contacts: UnifiedContact[]): UnifiedContact[] {
+export function deduplicateContacts(contacts: UnifiedContact[]): UnifiedContact[] {
   const seen = new Map<string, UnifiedContact>();
   for (const contact of contacts) {
     const raw = contact.displayName;
@@ -194,13 +195,26 @@ export async function fetchContactDetail(contact: UnifiedContact): Promise<Unifi
   return {
     ...contact,
     emails: (raw.emails ?? []).map((e) => ({ value: e.value, type: formatLabel(e.type) })),
-    phones: (raw.phones ?? []).map((p) => ({ value: p.value, type: formatLabel(p.type) })),
+    phones: (raw.phones ?? []).map((p) => ({ value: formatPhoneNumber(p.value), type: formatLabel(p.type) })),
     addresses: (raw.addresses ?? []).map((a) => ({ formattedValue: a.formattedValue, type: formatLabel(a.type) })),
     jobTitle: raw.jobTitle || undefined,
     notes: raw.notes || undefined,
     birthday: raw.birthday || undefined,
     photoUrl: raw.photoPath ? `file://${raw.photoPath}` : undefined,
   };
+}
+
+// ─── Delete a contact ─────────────────────────────────────────────────────────
+
+export async function deleteAppleContact(appleId: string): Promise<void> {
+  await runJXA(`
+    var app = Application("Contacts");
+    var matches = app.people.whose({ id: { _equals: ${JSON.stringify(appleId)} } });
+    if (matches.length > 0) {
+      app.delete(matches[0]);
+      app.save();
+    }
+  `);
 }
 
 // ─── Create a new contact ─────────────────────────────────────────────────────
