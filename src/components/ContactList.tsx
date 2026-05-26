@@ -5,6 +5,7 @@ import { fetchContactDetail } from "../apple-contacts";
 import { formatBirthday, groupByLetter } from "../helpers";
 import { UnifiedContact } from "../types";
 import ContactActions from "./ContactActions";
+import ContactForm from "./ContactForm";
 
 function formatType(type: string | undefined): string {
   if (!type) return "";
@@ -84,6 +85,12 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
         actions={
           !isLoading ? (
             <ActionPanel>
+              <Action.Push
+                title="New Contact"
+                icon={Icon.PersonCircle}
+                shortcut={{ modifiers: ["cmd"], key: "n" }}
+                target={<ContactForm onSaved={onRefresh} />}
+              />
               <Action.Open
                 title="Open Contacts App"
                 icon={Icon.TwoPeople}
@@ -115,8 +122,9 @@ export default function ContactList({ contacts, isLoading, onRefresh }: ContactL
                 key={contact.id}
                 id={contact.id}
                 title={contact.displayName}
-                subtitle={contact.company ?? ""}
+                subtitle={contact.primaryPhone ?? ""}
                 icon={icon}
+                accessories={contact.company ? [{ tag: contact.company }] : undefined}
                 keywords={[contact.firstName ?? "", contact.lastName ?? "", contact.company ?? ""]}
                 detail={
                   <List.Item.Detail

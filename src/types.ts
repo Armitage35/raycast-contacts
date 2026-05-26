@@ -16,6 +16,7 @@ export interface UnifiedContact {
   emails: ContactField[];
   phones: ContactField[];
   company?: string;
+  primaryPhone?: string;
   jobTitle?: string;
   addresses?: ContactAddress[];
   birthday?: string;

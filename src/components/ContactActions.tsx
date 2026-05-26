@@ -1,5 +1,6 @@
 import { Action, ActionPanel, Icon } from "@raycast/api";
 import { UnifiedContact } from "../types";
+import ContactForm from "./ContactForm";
 
 interface ContactActionsProps {
   contact: UnifiedContact;
@@ -13,7 +14,21 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
   return (
     <ActionPanel>
       <ActionPanel.Section>
-        {/* Primary action priority: Compose Email > Call > Open in Contacts */}
+        <Action.Push
+          title="Edit Contact"
+          icon={Icon.Pencil}
+          shortcut={{ modifiers: ["cmd"], key: "e" }}
+          target={<ContactForm contact={contact} onSaved={onRefresh} />}
+        />
+        <Action.Push
+          title="New Contact"
+          icon={Icon.PersonCircle}
+          shortcut={{ modifiers: ["cmd"], key: "n" }}
+          target={<ContactForm onSaved={onRefresh} />}
+        />
+      </ActionPanel.Section>
+
+      <ActionPanel.Section>
         {primaryEmail && (
           <Action.Open title="Compose Email" icon={Icon.Envelope} target={`mailto:${primaryEmail}`} />
         )}
@@ -29,7 +44,7 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
           title="Open in Contacts"
           icon={Icon.TwoPeople}
           target="addressbook://"
-          shortcut={primaryEmail || primaryPhone ? { modifiers: ["cmd"], key: "o" } : undefined}
+          shortcut={{ modifiers: ["cmd"], key: "o" }}
         />
       </ActionPanel.Section>
 

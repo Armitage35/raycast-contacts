@@ -29,14 +29,17 @@ var names      = people.name();
 var firstNames = people.firstName();
 var lastNames  = people.lastName();
 var orgs       = people.organization();
+var phoneVals  = people.phones.value();
 var out = [];
 for (var i = 0; i < ids.length; i++) {
+  var pvs = phoneVals[i];
   out.push({
     id:        ids[i]        || "",
     name:      names[i]      || "",
     firstName: firstNames[i] || "",
     lastName:  lastNames[i]  || "",
-    org:       orgs[i]       || ""
+    org:       orgs[i]       || "",
+    phone:     (pvs && pvs.length > 0) ? pvs[0] : ""
   });
 }
 JSON.stringify(out);
@@ -44,7 +47,7 @@ JSON.stringify(out);
 
 export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
   const json = await runJXA(LIST_SCRIPT);
-  const raw: { id: string; name: string; firstName: string; lastName: string; org: string }[] =
+  const raw: { id: string; name: string; firstName: string; lastName: string; org: string; phone: string }[] =
     JSON.parse(json || "[]");
 
   return raw
@@ -57,6 +60,7 @@ export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
       emails: [],
       phones: [],
       company: r.org || undefined,
+      primaryPhone: r.phone || undefined,
     }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 }
