@@ -2,6 +2,16 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import { UnifiedContact } from "./types";
 
+export interface ContactFormValues {
+  firstName: string;
+  lastName: string;
+  company: string;
+  jobTitle: string;
+  phone: string;
+  email: string;
+  notes: string;
+}
+
 const execFileAsync = promisify(execFile);
 
 async function runJXA(script: string): Promise<string> {
@@ -150,4 +160,65 @@ export async function fetchContactDetail(contact: UnifiedContact): Promise<Unifi
     birthday: raw.birthday || undefined,
     photoUrl: raw.photoPath ? `file://${raw.photoPath}` : undefined,
   };
+}
+
+// ─── Create a new contact ─────────────────────────────────────────────────────
+
+export async function createAppleContact(values: ContactFormValues): Promise<void> {
+  const v = JSON.stringify(values);
+  const script = `
+var app = Application("Contacts");
+var v = ${v};
+var props = {};
+if (v.firstName) props.firstName    = v.firstName;
+if (v.lastName)  props.lastName     = v.lastName;
+if (v.company)   props.organization = v.company;
+if (v.jobTitle)  props.jobTitle     = v.jobTitle;
+if (v.notes)     props.note         = v.notes;
+var person = app.Person(props);
+app.defaultAddressBook.people.push(person);
+if (v.email) {
+  var email = app.Email({ label: "work", value: v.email });
+  person.emails.push(email);
+}
+if (v.phone) {
+  var phone = app.Phone({ label: "mobile", value: v.phone });
+  person.phones.push(phone);
+}
+app.save();
+"ok";
+`;
+  await runJXA(script);
+}
+
+// ─── Update an existing contact ───────────────────────────────────────────────
+
+export async function updateAppleContact(appleId: string, values: ContactFormValues): Promise<void> {
+  const v = JSON.stringify(values);
+  const id = JSON.stringify(appleId);
+  const script = `
+var app = Application("Contacts");
+var v = ${v};
+var p = app.people.whose({ id: { _equals: ${id} } })[0];
+p.firstName    = v.firstName || "";
+p.lastName     = v.lastName  || "";
+p.organization = v.company   || "";
+p.jobTitle     = v.jobTitle  || "";
+p.note         = v.notes     || "";
+var emailCount = p.emails().length;
+for (var i = emailCount - 1; i >= 0; i--) { app.delete(p.emails[i]); }
+if (v.email) {
+  var email = app.Email({ label: "work", value: v.email });
+  p.emails.push(email);
+}
+var phoneCount = p.phones().length;
+for (var i = phoneCount - 1; i >= 0; i--) { app.delete(p.phones[i]); }
+if (v.phone) {
+  var phone = app.Phone({ label: "mobile", value: v.phone });
+  p.phones.push(phone);
+}
+app.save();
+"ok";
+`;
+  await runJXA(script);
 }

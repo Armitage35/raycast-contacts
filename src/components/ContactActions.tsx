@@ -1,6 +1,5 @@
 import { Action, ActionPanel, Icon } from "@raycast/api";
 import { UnifiedContact } from "../types";
-import ContactDetail from "./ContactDetail";
 
 interface ContactActionsProps {
   contact: UnifiedContact;
@@ -14,32 +13,23 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
   return (
     <ActionPanel>
       <ActionPanel.Section>
-        <Action.Push
-          title="See Details"
-          icon={Icon.Sidebar}
-          target={<ContactDetail contact={contact} onRefresh={onRefresh} />}
-        />
+        {/* Primary action priority: Compose Email > Call > Open in Contacts */}
         {primaryEmail && (
-          <Action.Open
-            title="Compose Email"
-            icon={Icon.Envelope}
-            target={`mailto:${primaryEmail}`}
-            shortcut={{ modifiers: ["cmd", "shift"], key: "e" }}
-          />
+          <Action.Open title="Compose Email" icon={Icon.Envelope} target={`mailto:${primaryEmail}`} />
         )}
         {primaryPhone && (
           <Action.Open
             title="Call"
             icon={Icon.Phone}
             target={`tel:${primaryPhone}`}
-            shortcut={{ modifiers: ["cmd", "shift"], key: "c" }}
+            shortcut={primaryEmail ? { modifiers: ["cmd", "shift"], key: "c" } : undefined}
           />
         )}
         <Action.Open
           title="Open in Contacts"
           icon={Icon.TwoPeople}
           target="addressbook://"
-          shortcut={{ modifiers: ["cmd"], key: "o" }}
+          shortcut={primaryEmail || primaryPhone ? { modifiers: ["cmd"], key: "o" } : undefined}
         />
       </ActionPanel.Section>
 
@@ -52,7 +42,7 @@ export default function ContactActions({ contact, onRefresh }: ContactActionsPro
             shortcut={i === 0 ? { modifiers: ["cmd", "shift"], key: "p" } : undefined}
           />
         ))}
-        {contact.emails.map((e, i) => (
+        {contact.emails.map((e) => (
           <Action.CopyToClipboard
             key={e.value}
             title={`Copy ${formatType(e.type)} Email`}
