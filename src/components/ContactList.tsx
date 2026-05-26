@@ -50,7 +50,10 @@ interface ContactListProps {
   onRefresh: () => void;
 }
 
-function filterContacts(contacts: UnifiedContact[], query: string): UnifiedContact[] {
+function filterContacts(
+  contacts: UnifiedContact[],
+  query: string,
+): UnifiedContact[] {
   const q = query.trim().toLowerCase();
   if (!q) return contacts;
   return contacts.filter((c) => {
