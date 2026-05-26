@@ -1,6 +1,17 @@
-import { Action, ActionPanel, Form, showToast, Toast, useNavigation } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Form,
+  showToast,
+  Toast,
+  useNavigation,
+} from "@raycast/api";
 import { useForm } from "@raycast/utils";
-import { createAppleContact, updateAppleContact, ContactFormValues } from "../apple-contacts";
+import {
+  createAppleContact,
+  updateAppleContact,
+  ContactFormValues,
+} from "../apple-contacts";
 import { UnifiedContact } from "../types";
 
 interface ContactFormProps {
@@ -41,7 +52,9 @@ export default function ContactForm({ contact, onSaved }: ContactFormProps) {
         pop();
       } catch (error) {
         toast.style = Toast.Style.Failure;
-        toast.title = isEditing ? "Failed to update contact" : "Failed to create contact";
+        toast.title = isEditing
+          ? "Failed to update contact"
+          : "Failed to create contact";
         toast.message = String(error);
       }
     },
@@ -58,7 +71,9 @@ export default function ContactForm({ contact, onSaved }: ContactFormProps) {
 
   return (
     <Form
-      navigationTitle={isEditing ? `Edit ${contact?.displayName ?? "Contact"}` : "New Contact"}
+      navigationTitle={
+        isEditing ? `Edit ${contact?.displayName ?? "Contact"}` : "New Contact"
+      }
       actions={
         <ActionPanel>
           <Action.SubmitForm
@@ -68,14 +83,38 @@ export default function ContactForm({ contact, onSaved }: ContactFormProps) {
         </ActionPanel>
       }
     >
-      <Form.TextField title="First Name" placeholder="First" {...itemProps.firstName} />
-      <Form.TextField title="Last Name" placeholder="Last" {...itemProps.lastName} />
+      <Form.TextField
+        title="First Name"
+        placeholder="First"
+        {...itemProps.firstName}
+      />
+      <Form.TextField
+        title="Last Name"
+        placeholder="Last"
+        {...itemProps.lastName}
+      />
       <Form.Separator />
-      <Form.TextField title="Company" placeholder="Acme Corp" {...itemProps.company} />
-      <Form.TextField title="Job Title" placeholder="Engineer" {...itemProps.jobTitle} />
+      <Form.TextField
+        title="Company"
+        placeholder="Acme Corp"
+        {...itemProps.company}
+      />
+      <Form.TextField
+        title="Job Title"
+        placeholder="Engineer"
+        {...itemProps.jobTitle}
+      />
       <Form.Separator />
-      <Form.TextField title="Phone" placeholder="+1 (555) 000-0000" {...itemProps.phone} />
-      <Form.TextField title="Email" placeholder="name@example.com" {...itemProps.email} />
+      <Form.TextField
+        title="Phone"
+        placeholder="+1 (555) 000-0000"
+        {...itemProps.phone}
+      />
+      <Form.TextField
+        title="Email"
+        placeholder="name@example.com"
+        {...itemProps.email}
+      />
       <Form.Separator />
       <Form.TextArea title="Notes" placeholder="Notes…" {...itemProps.notes} />
     </Form>

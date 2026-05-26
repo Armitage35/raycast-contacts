@@ -67,7 +67,7 @@ export default function ContactList({
 
   const { data: detailContact, isLoading: isLoadingDetail } = useCachedPromise(
     fetchContactDetail,
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+
     [selectedContact!],
     {
       keepPreviousData: true,
@@ -130,12 +130,20 @@ export default function ContactList({
                 key={contact.id}
                 id={contact.id}
                 title={contact.displayName}
-                subtitle={contact.company ?? ""}
+                subtitle={contact.primaryPhone ?? contact.company ?? ""}
                 icon={icon}
+                accessories={[
+                  ...(contact.primaryEmail
+                    ? [{ text: contact.primaryEmail }]
+                    : []),
+                  ...(contact.company ? [{ tag: contact.company }] : []),
+                ]}
                 keywords={[
                   contact.firstName ?? "",
                   contact.lastName ?? "",
                   contact.company ?? "",
+                  contact.primaryPhone ?? "",
+                  contact.primaryEmail ?? "",
                 ]}
                 detail={
                   <List.Item.Detail

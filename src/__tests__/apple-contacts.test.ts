@@ -1,8 +1,14 @@
 import { describe, it, expect } from "vitest";
-import { normalizeKey, mergeContacts, deduplicateContacts } from "../apple-contacts";
+import {
+  normalizeKey,
+  mergeContacts,
+  deduplicateContacts,
+} from "../apple-contacts";
 import { UnifiedContact } from "../types";
 
-function makeContact(overrides: Partial<UnifiedContact> & { id: string; displayName: string }): UnifiedContact {
+function makeContact(
+  overrides: Partial<UnifiedContact> & { id: string; displayName: string },
+): UnifiedContact {
   return { emails: [], phones: [], ...overrides };
 }
 
@@ -32,8 +38,18 @@ describe("normalizeKey", () => {
 
 describe("mergeContacts", () => {
   it("keeps scalar fields from contact A when present", () => {
-    const a = makeContact({ id: "a", displayName: "Alice", firstName: "Alice", company: "ACME" });
-    const b = makeContact({ id: "b", displayName: "Alice", firstName: "Alicia", company: "Corp" });
+    const a = makeContact({
+      id: "a",
+      displayName: "Alice",
+      firstName: "Alice",
+      company: "ACME",
+    });
+    const b = makeContact({
+      id: "b",
+      displayName: "Alice",
+      firstName: "Alicia",
+      company: "Corp",
+    });
     const merged = mergeContacts(a, b);
     expect(merged.firstName).toBe("Alice");
     expect(merged.company).toBe("ACME");
@@ -41,7 +57,12 @@ describe("mergeContacts", () => {
 
   it("falls back to contact B when contact A has no value", () => {
     const a = makeContact({ id: "a", displayName: "Alice" });
-    const b = makeContact({ id: "b", displayName: "Alice", firstName: "Alice", jobTitle: "Engineer" });
+    const b = makeContact({
+      id: "b",
+      displayName: "Alice",
+      firstName: "Alice",
+      jobTitle: "Engineer",
+    });
     const merged = mergeContacts(a, b);
     expect(merged.firstName).toBe("Alice");
     expect(merged.jobTitle).toBe("Engineer");
@@ -95,8 +116,18 @@ describe("deduplicateContacts", () => {
 
   it("merges fields across duplicate entries", () => {
     const contacts = [
-      makeContact({ id: "1", displayName: "Alice", phones: [{ value: "+1 555 0001" }], emails: [] }),
-      makeContact({ id: "2", displayName: "Alice", phones: [], emails: [{ value: "alice@example.com" }] }),
+      makeContact({
+        id: "1",
+        displayName: "Alice",
+        phones: [{ value: "+1 555 0001" }],
+        emails: [],
+      }),
+      makeContact({
+        id: "2",
+        displayName: "Alice",
+        phones: [],
+        emails: [{ value: "alice@example.com" }],
+      }),
     ];
     const [merged] = deduplicateContacts(contacts);
     expect(merged.phones).toEqual([{ value: "+1 555 0001" }]);

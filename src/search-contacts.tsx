@@ -4,7 +4,12 @@ import { useContacts } from "./hooks";
 import ContactList from "./components/ContactList";
 
 // Fire-and-forget: wake the Contacts JXA bridge before the real fetch fires
-execFile("osascript", ["-l", "JavaScript", "-e", 'Application("Contacts").activate();']);
+execFile("osascript", [
+  "-l",
+  "JavaScript",
+  "-e",
+  'Application("Contacts").activate();',
+]);
 
 export default function SearchContacts() {
   const { data: contacts, isLoading, revalidate } = useContacts();

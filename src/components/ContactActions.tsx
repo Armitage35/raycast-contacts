@@ -1,4 +1,12 @@
-import { Action, ActionPanel, Icon, confirmAlert, Alert, showToast, Toast } from "@raycast/api";
+import {
+  Action,
+  ActionPanel,
+  Icon,
+  confirmAlert,
+  Alert,
+  showToast,
+  Toast,
+} from "@raycast/api";
 import { deleteAppleContact } from "../apple-contacts";
 import { UnifiedContact } from "../types";
 
@@ -8,7 +16,11 @@ interface ContactActionsProps {
   onContactDeleted: () => void;
 }
 
-export default function ContactActions({ contact, onRefresh, onContactDeleted }: ContactActionsProps) {
+export default function ContactActions({
+  contact,
+  onRefresh,
+  onContactDeleted,
+}: ContactActionsProps) {
   const primaryEmail = contact.emails[0]?.value;
   const primaryPhone = contact.phones[0]?.value;
 
@@ -17,21 +29,33 @@ export default function ContactActions({ contact, onRefresh, onContactDeleted }:
       <ActionPanel.Section>
         {/* Primary action priority: Compose Email > Call > Open in Contacts */}
         {primaryEmail && (
-          <Action.Open title="Compose Email" icon={Icon.Envelope} target={`mailto:${primaryEmail}`} />
+          <Action.Open
+            title="Compose Email"
+            icon={Icon.Envelope}
+            target={`mailto:${primaryEmail}`}
+          />
         )}
         {primaryPhone && (
           <Action.Open
             title="Call"
             icon={Icon.Phone}
             target={`tel:${primaryPhone}`}
-            shortcut={primaryEmail ? { modifiers: ["cmd", "shift"], key: "c" } : undefined}
+            shortcut={
+              primaryEmail
+                ? { modifiers: ["cmd", "shift"], key: "c" }
+                : undefined
+            }
           />
         )}
         <Action.Open
           title="Open in Contacts"
           icon={Icon.TwoPeople}
           target="addressbook://"
-          shortcut={primaryEmail || primaryPhone ? { modifiers: ["cmd"], key: "o" } : undefined}
+          shortcut={
+            primaryEmail || primaryPhone
+              ? { modifiers: ["cmd"], key: "o" }
+              : undefined
+          }
         />
       </ActionPanel.Section>
 
@@ -41,7 +65,9 @@ export default function ContactActions({ contact, onRefresh, onContactDeleted }:
             key={p.value}
             title={`Copy ${formatType(p.type)} Phone`}
             content={p.value}
-            shortcut={i === 0 ? { modifiers: ["cmd", "shift"], key: "p" } : undefined}
+            shortcut={
+              i === 0 ? { modifiers: ["cmd", "shift"], key: "p" } : undefined
+            }
           />
         ))}
         {contact.emails.map((e) => (
@@ -86,7 +112,10 @@ export default function ContactActions({ contact, onRefresh, onContactDeleted }:
             try {
               const appleId = contact.id.replace("apple:", "");
               await deleteAppleContact(appleId);
-              await showToast({ style: Toast.Style.Success, title: "Contact deleted" });
+              await showToast({
+                style: Toast.Style.Success,
+                title: "Contact deleted",
+              });
               onContactDeleted();
             } catch (err) {
               await showToast({

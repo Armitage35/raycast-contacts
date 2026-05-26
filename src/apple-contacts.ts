@@ -16,7 +16,12 @@ export interface ContactFormValues {
 const execFileAsync = promisify(execFile);
 
 async function runJXA(script: string): Promise<string> {
-  const { stdout } = await execFileAsync("osascript", ["-l", "JavaScript", "-e", script]);
+  const { stdout } = await execFileAsync("osascript", [
+    "-l",
+    "JavaScript",
+    "-e",
+    script,
+  ]);
   return stdout.trim();
 }
 
@@ -30,14 +35,20 @@ var names      = people.name();
 var firstNames = people.firstName();
 var lastNames  = people.lastName();
 var orgs       = people.organization();
+var phoneVals  = people.phones.value();
+var emailVals  = people.emails.value();
 var out = [];
 for (var i = 0; i < ids.length; i++) {
+  var pvs = phoneVals[i];
+  var evs = emailVals[i];
   out.push({
-    id:        ids[i]        || "",
-    name:      names[i]      || "",
-    firstName: firstNames[i] || "",
-    lastName:  lastNames[i]  || "",
-    org:       orgs[i]       || ""
+    id:           ids[i]        || "",
+    name:         names[i]      || "",
+    firstName:    firstNames[i] || "",
+    lastName:     lastNames[i]  || "",
+    org:          orgs[i]       || "",
+    primaryPhone: (pvs && pvs.length > 0) ? pvs[0] || "" : "",
+    primaryEmail: (evs && evs.length > 0) ? evs[0] || "" : ""
   });
 }
 JSON.stringify(out);
@@ -51,19 +62,26 @@ export function normalizeKey(name: string): string {
     .toLowerCase();
 }
 
-export function mergeContacts(a: UnifiedContact, b: UnifiedContact): UnifiedContact {
+export function mergeContacts(
+  a: UnifiedContact,
+  b: UnifiedContact,
+): UnifiedContact {
   return {
     ...a,
     firstName: a.firstName || b.firstName,
     lastName: a.lastName || b.lastName,
     company: a.company || b.company,
+    primaryPhone: a.primaryPhone || b.primaryPhone,
+    primaryEmail: a.primaryEmail || b.primaryEmail,
     jobTitle: a.jobTitle || b.jobTitle,
     emails: a.emails.length ? a.emails : b.emails,
     phones: a.phones.length ? a.phones : b.phones,
   };
 }
 
-export function deduplicateContacts(contacts: UnifiedContact[]): UnifiedContact[] {
+export function deduplicateContacts(
+  contacts: UnifiedContact[],
+): UnifiedContact[] {
   const seen = new Map<string, UnifiedContact>();
   for (const contact of contacts) {
     const raw = contact.displayName;
@@ -84,8 +102,15 @@ export function deduplicateContacts(contacts: UnifiedContact[]): UnifiedContact[
 
 export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
   const json = await runJXA(LIST_SCRIPT);
-  const raw: { id: string; name: string; firstName: string; lastName: string; org: string }[] =
-    JSON.parse(json || "[]");
+  const raw: {
+    id: string;
+    name: string;
+    firstName: string;
+    lastName: string;
+    org: string;
+    primaryPhone: string;
+    primaryEmail: string;
+  }[] = JSON.parse(json || "[]");
 
   const contacts = raw
     .filter((r) => r.id)
@@ -97,6 +122,8 @@ export async function fetchAppleContacts(): Promise<UnifiedContact[]> {
       emails: [],
       phones: [],
       company: r.org || undefined,
+      primaryPhone: r.primaryPhone || undefined,
+      primaryEmail: r.primaryEmail || undefined,
     }))
     .sort((a, b) => a.displayName.localeCompare(b.displayName));
 
@@ -187,16 +214,27 @@ function formatLabel(type: string): string | undefined {
   return clean || undefined;
 }
 
-export async function fetchContactDetail(contact: UnifiedContact): Promise<UnifiedContact> {
+export async function fetchContactDetail(
+  contact: UnifiedContact,
+): Promise<UnifiedContact> {
   const appleId = contact.id.replace("apple:", "");
   const json = await runJXA(detailScript(appleId));
   const raw: RawDetail = JSON.parse(json || "{}");
 
   return {
     ...contact,
-    emails: (raw.emails ?? []).map((e) => ({ value: e.value, type: formatLabel(e.type) })),
-    phones: (raw.phones ?? []).map((p) => ({ value: formatPhoneNumber(p.value), type: formatLabel(p.type) })),
-    addresses: (raw.addresses ?? []).map((a) => ({ formattedValue: a.formattedValue, type: formatLabel(a.type) })),
+    emails: (raw.emails ?? []).map((e) => ({
+      value: e.value,
+      type: formatLabel(e.type),
+    })),
+    phones: (raw.phones ?? []).map((p) => ({
+      value: formatPhoneNumber(p.value),
+      type: formatLabel(p.type),
+    })),
+    addresses: (raw.addresses ?? []).map((a) => ({
+      formattedValue: a.formattedValue,
+      type: formatLabel(a.type),
+    })),
     jobTitle: raw.jobTitle || undefined,
     notes: raw.notes || undefined,
     birthday: raw.birthday || undefined,
@@ -219,7 +257,9 @@ export async function deleteAppleContact(appleId: string): Promise<void> {
 
 // ─── Create a new contact ─────────────────────────────────────────────────────
 
-export async function createAppleContact(values: ContactFormValues): Promise<void> {
+export async function createAppleContact(
+  values: ContactFormValues,
+): Promise<void> {
   const v = JSON.stringify(values);
   const script = `
 var app = Application("Contacts");
@@ -248,7 +288,10 @@ app.save();
 
 // ─── Update an existing contact ───────────────────────────────────────────────
 
-export async function updateAppleContact(appleId: string, values: ContactFormValues): Promise<void> {
+export async function updateAppleContact(
+  appleId: string,
+  values: ContactFormValues,
+): Promise<void> {
   const v = JSON.stringify(values);
   const id = JSON.stringify(appleId);
   const script = `
