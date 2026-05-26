@@ -60,6 +60,14 @@ export default function ContactActions({
               : undefined
           }
         />
+        {contact.addresses && contact.addresses.length > 0 && (
+          <Action.OpenInBrowser
+            title="Open in Maps"
+            icon={Icon.Map}
+            url={`https://maps.apple.com/?q=${encodeURIComponent(contact.addresses[0].formattedValue.replace(/\n/g, ", "))}`}
+            shortcut={{ modifiers: ["cmd"], key: "m" }}
+          />
+        )}
       </ActionPanel.Section>
 
       <ActionPanel.Section title="Copy">

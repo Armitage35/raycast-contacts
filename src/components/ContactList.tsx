@@ -24,19 +24,8 @@ function formatAddress(a: ContactAddress): string {
   return a.formattedValue.replace(/\n/g, ", ");
 }
 
-function buildHeaderMarkdown(c: UnifiedContact): string {
-  const lines: string[] = [];
-
-  if (c.photoUrl) lines.push(`![](${c.photoUrl})\n`);
-
-  lines.push(`# ${c.displayName}`);
-
-  if (c.jobTitle || c.company) {
-    const subtitle = [c.jobTitle, c.company].filter(Boolean).join(" at ");
-    lines.push(`*${subtitle}*`);
-  }
-
-  return lines.join("\n");
+function buildHeaderMarkdown(c: UnifiedContact): string | undefined {
+  return c.photoUrl ? `![](${c.photoUrl})` : undefined;
 }
 
 interface ContactListProps {
@@ -142,12 +131,34 @@ export default function ContactList({
                   const birthday = formatBirthday(displayContact.birthday);
                   const notes = displayContact.notes;
 
+                  const subtitle =
+                    displayContact.jobTitle || displayContact.company
+                      ? [displayContact.jobTitle, displayContact.company]
+                          .filter(Boolean)
+                          .join(" at ")
+                      : null;
+
                   return (
                     <List.Item.Detail
                       markdown={buildHeaderMarkdown(displayContact)}
                       isLoading={isSelected && isLoadingDetail}
                       metadata={
                         <List.Item.Detail.Metadata>
+                          <List.Item.Detail.Metadata.Label
+                            title=""
+                            text={displayContact.displayName}
+                          />
+                          {subtitle && (
+                            <List.Item.Detail.Metadata.Label
+                              title=""
+                              text={subtitle}
+                            />
+                          )}
+                          {(phones.length > 0 ||
+                            emails.length > 0 ||
+                            addresses.length > 0 ||
+                            !!birthday ||
+                            !!notes) && <List.Item.Detail.Metadata.Separator />}
                           {phones.map((p, i) => (
                             <List.Item.Detail.Metadata.Label
                               key={i}
