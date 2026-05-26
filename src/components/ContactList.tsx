@@ -1,10 +1,11 @@
-import { Action, ActionPanel, Icon, Image, List } from "@raycast/api";
+import { Action, ActionPanel, Icon, Image, List, useNavigation } from "@raycast/api";
 import { getAvatarIcon, useCachedPromise } from "@raycast/utils";
 import { useState } from "react";
 import { fetchContactDetail } from "../apple-contacts";
 import { formatBirthday, groupByLetter } from "../helpers";
 import { UnifiedContact } from "../types";
 import ContactActions from "./ContactActions";
+import ContactForm from "./ContactForm";
 
 function formatType(type: string | undefined): string {
   if (!type) return "";
@@ -132,14 +133,7 @@ export default function ContactList({
                 key={contact.id}
                 id={contact.id}
                 title={contact.displayName}
-                subtitle={contact.primaryPhone ?? contact.company ?? ""}
                 icon={icon}
-                accessories={[
-                  ...(contact.primaryEmail
-                    ? [{ text: contact.primaryEmail }]
-                    : []),
-                  ...(contact.company ? [{ tag: contact.company }] : []),
-                ]}
                 keywords={[
                   contact.firstName ?? "",
                   contact.lastName ?? "",
