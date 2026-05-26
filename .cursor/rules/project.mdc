@@ -57,6 +57,10 @@ src/
 
 - `raycast-guidelines.mdc` — always-apply rule covering Raycast store submission requirements, naming conventions, UX patterns, and ActionPanel rules. Consult it before adding actions, changing `package.json` fields, or shipping any UX change.
 
+## Protected files
+
+**NEVER modify `assets/extension-icon.png`** unless the user explicitly asks to change the icon. Agents making code/feature changes must not touch this file.
+
 ## Dev workflow
 
 ```bash
