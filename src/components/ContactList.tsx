@@ -24,8 +24,22 @@ function formatAddress(a: ContactAddress): string {
   return a.formattedValue.replace(/\n/g, ", ");
 }
 
-function buildHeaderMarkdown(c: UnifiedContact): string | undefined {
-  return c.photoUrl ? `![](${c.photoUrl})` : undefined;
+function buildHeaderMarkdown(
+  c: UnifiedContact,
+  subtitle: string | null,
+): string {
+  const nameLine = `# ${c.displayName}`;
+  const subtitleLine = subtitle ? `\n*${subtitle}*` : "";
+  const body = `${nameLine}${subtitleLine}`;
+  return c.photoUrl ? `![](${c.photoUrl})\n${body}` : body;
+}
+
+function phoneToE164(phone: string): string {
+  return phone.replace(/[^\d+]/g, "");
+}
+
+function addressToMapsUrl(formatted: string): string {
+  return `https://maps.apple.com/?q=${encodeURIComponent(formatted)}`;
 }
 
 interface ContactListProps {
@@ -140,31 +154,16 @@ export default function ContactList({
 
                   return (
                     <List.Item.Detail
-                      markdown={buildHeaderMarkdown(displayContact)}
+                      markdown={buildHeaderMarkdown(displayContact, subtitle)}
                       isLoading={isSelected && isLoadingDetail}
                       metadata={
                         <List.Item.Detail.Metadata>
-                          <List.Item.Detail.Metadata.Label
-                            title=""
-                            text={displayContact.displayName}
-                          />
-                          {subtitle && (
-                            <List.Item.Detail.Metadata.Label
-                              title=""
-                              text={subtitle}
-                            />
-                          )}
-                          {(phones.length > 0 ||
-                            emails.length > 0 ||
-                            addresses.length > 0 ||
-                            !!birthday ||
-                            !!notes) && <List.Item.Detail.Metadata.Separator />}
                           {phones.map((p, i) => (
-                            <List.Item.Detail.Metadata.Label
+                            <List.Item.Detail.Metadata.Link
                               key={i}
                               title={i === 0 ? "Phone" : ""}
                               text={`${p.value}${p.type ? `  (${formatType(p.type)})` : ""}`}
-                              icon={i === 0 ? Icon.Phone : undefined}
+                              target={`tel:${phoneToE164(p.value)}`}
                             />
                           ))}
 
@@ -173,22 +172,24 @@ export default function ContactList({
                           )}
 
                           {emails.map((e, i) => (
-                            <List.Item.Detail.Metadata.Label
+                            <List.Item.Detail.Metadata.Link
                               key={i}
                               title={i === 0 ? "Email" : ""}
                               text={`${e.value}${e.type ? `  (${formatType(e.type)})` : ""}`}
-                              icon={i === 0 ? Icon.Envelope : undefined}
+                              target={`mailto:${e.value}`}
                             />
                           ))}
 
-                          {addresses.length > 0 && (
-                            <List.Item.Detail.Metadata.Separator />
-                          )}
+                          {addresses.length > 0 &&
+                            (emails.length > 0 || phones.length > 0) && (
+                              <List.Item.Detail.Metadata.Separator />
+                            )}
                           {addresses.map((a, i) => (
-                            <List.Item.Detail.Metadata.Label
+                            <List.Item.Detail.Metadata.Link
                               key={i}
                               title={i === 0 ? "Address" : ""}
                               text={`${formatAddress(a)}${a.type ? `  (${formatType(a.type)})` : ""}`}
+                              target={addressToMapsUrl(formatAddress(a))}
                             />
                           ))}
 
