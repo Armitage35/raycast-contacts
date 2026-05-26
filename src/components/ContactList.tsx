@@ -22,38 +22,55 @@ function formatType(type: string | undefined): string {
 
 function buildMarkdown(c: UnifiedContact): string {
   const birthday = formatBirthday(c.birthday);
-  const photoMd = c.photoUrl ? `![](${c.photoUrl})\n\n` : "";
-  const lines: string[] = [photoMd + `# ${c.displayName}`];
-  if (c.company || c.jobTitle) {
-    lines.push([c.jobTitle, c.company].filter(Boolean).join(" · "));
+  const lines: string[] = [];
+
+  if (c.photoUrl) lines.push(`![](${c.photoUrl})\n`);
+
+  lines.push(`# ${c.displayName}`);
+
+  if (c.jobTitle || c.company) {
+    const subtitle = [c.jobTitle, c.company].filter(Boolean).join(" at ");
+    lines.push(`*${subtitle}*`);
   }
-  lines.push("");
+
+  lines.push("\n---\n");
 
   if (c.phones.length > 0) {
-    lines.push("### Phone");
+    lines.push("📞 **Phone**");
     for (const p of c.phones) {
-      lines.push(`- ${p.value}${p.type ? `  *(${formatType(p.type)})*` : ""}`);
+      lines.push(`- ${p.value}${p.type ? ` — *${formatType(p.type)}*` : ""}`);
     }
     lines.push("");
   }
+
   if (c.emails.length > 0) {
-    lines.push("### Email");
+    lines.push("✉️ **Email**");
     for (const e of c.emails) {
-      lines.push(`- ${e.value}${e.type ? `  *(${formatType(e.type)})*` : ""}`);
+      lines.push(`- ${e.value}${e.type ? ` — *${formatType(e.type)}*` : ""}`);
     }
     lines.push("");
   }
+
   if ((c.addresses ?? []).length > 0) {
-    lines.push("### Address");
+    lines.push("🏠 **Address**");
     for (const a of c.addresses!) {
       lines.push(
-        `- ${a.formattedValue.replace(/\n/g, ", ")}${a.type ? `  *(${formatType(a.type)})*` : ""}`,
+        `- ${a.formattedValue.replace(/\n/g, ", ")}${a.type ? ` — *${formatType(a.type)}*` : ""}`,
       );
     }
     lines.push("");
   }
-  if (birthday) lines.push(`### Birthday\n- 🎂 ${birthday}\n`);
-  if (c.notes) lines.push(`### Notes\n${c.notes}`);
+
+  if (birthday) {
+    lines.push("🎂 **Birthday**");
+    lines.push(birthday);
+    lines.push("");
+  }
+
+  if (c.notes) {
+    lines.push("📝 **Notes**");
+    lines.push(c.notes);
+  }
 
   return lines.join("\n");
 }
