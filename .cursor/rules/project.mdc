@@ -19,21 +19,26 @@ A Raycast extension that searches Apple Contacts (macOS native) with a full deta
 ```
 src/
   search-contacts.tsx      ← command entry point
-  apple-contacts.ts        ← AppleScript fetcher + parser (returns UnifiedContact[])
+  apple-contacts.ts        ← Two-phase JXA fetcher via osascript -l JavaScript
+                              fetchAppleContacts()  — bulk list (fast, ~0.4s)
+                              fetchContactDetail()  — single contact full info
   hooks.ts                 ← useCachedPromise wrapper (useContacts)
-  types.ts                 ← UnifiedContact, ViewMode, ContactField, ContactAddress
+  types.ts                 ← UnifiedContact, ContactField, ContactAddress
   helpers.ts               ← groupByLetter, formatBirthday
   components/
-    ContactList.tsx        ← List + Detail UI, ViewModeDropdown
-    ContactActions.tsx     ← ActionPanel (open, email, call, copy, refresh)
+    ContactList.tsx        ← List view (name + company only at list level)
+    ContactDetail.tsx      ← Full detail screen, fetches emails/phones on push
+    ContactActions.tsx     ← ActionPanel for list items (See Details, Copy Name, Open)
 ```
 
 ## Key implementation details
 
-- AppleScript uses ASCII 29 (FS), 30 (RS), 28 (VS) as delimiters — never change these
-- `run-applescript` package is used (not JXA / child_process)
-- Apple Contact labels come through as `_$!<Home>!$_` — `formatType()` in ContactList strips this
-- `useCachedPromise` from `@raycast/utils` caches contacts between sessions
+- **Two-phase loading**: list fetch is bulk JXA (name/id/company only, ~0.4s). Per-contact
+  detail (emails, phones, addresses, birthday, notes) fetched via `whose { id: ... }` on demand.
+- Uses `osascript -l JavaScript` (JXA) via Node.js `child_process.execFile` — NOT AppleScript
+- Apple Contact labels come through as `_$!<Mobile>!$_` — `formatType()` strips this everywhere
+- `useCachedPromise` from `@raycast/utils` caches between sessions (instant on subsequent opens)
+- Per-contact detail is also cached by `useCachedPromise` in `ContactDetail`
 
 ## Dev workflow
 
